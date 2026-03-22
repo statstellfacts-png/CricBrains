@@ -49,6 +49,33 @@ select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--bo
 .fib{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:7px;font-size:10px;font-family:'IBM Plex Mono',monospace;min-height:44px;color:var(--muted)}
 .fib.on{border-color:var(--accent);color:var(--text)}
 .rule{margin-top:4px;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--accent2);line-height:1.6;padding:4px;background:rgba(242,196,64,.06);border:1px solid rgba(242,196,64,.2);border-radius:4px}
+/* ── BOWLER CARDS */
+.bc{position:relative;display:flex;align-items:center;gap:6px;padding:5px 7px;margin-bottom:3px;background:#081208;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .2s}
+.bc:hover{border-color:var(--border2)}
+.bc.active{border-color:var(--accent2);background:rgba(242,196,64,.07)}
+.bc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bc-name{flex:1;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-type{font-size:8px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:8px;font-weight:700}
+.bc-type.fast{background:rgba(255,96,48,.18);color:var(--fast);border:1px solid rgba(255,96,48,.3)}
+.bc-type.spin{background:rgba(66,196,228,.18);color:var(--spin);border:1px solid rgba(66,196,228,.3)}
+.bc-del{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:16px;height:16px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;line-height:1;display:none;border-radius:3px}
+.bc:hover .bc-del{display:block}
+.bc-del:hover{background:rgba(255,64,64,.18);color:#ff6060}
+.bc-saved{font-size:8px;color:var(--accent);margin-top:1px;font-family:'IBM Plex Mono',monospace}
+/* ── ADD BOWLER MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:#0e1e0c;border:1px solid var(--border2);border-radius:8px;padding:18px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.modal h2{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--accent);font-size:16px;margin-bottom:12px}
+.modal input,.modal select{width:100%;padding:7px 9px;background:#081208;border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:8px;outline:none}
+.modal input:focus,.modal select:focus{border-color:var(--accent)}
+.modal-lbl{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px;letter-spacing:1px}
+.modal-row{display:flex;gap:7px}
+.modal-row .ab{margin-bottom:0}
+.ab.sec2{border-color:var(--border2);color:var(--muted)}
+.ab.sec2:hover{border-color:var(--text);color:var(--text)}
+/* ── SAVE INDICATOR */
+.save-flash{animation:flash .6s ease}
+@keyframes flash{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
 .pdwrap{display:flex;gap:7px;align-items:flex-start;margin-top:4px}
 .pleg{display:flex;flex-direction:column;gap:3px;font-size:8px;font-family:'IBM Plex Mono',monospace;padding-top:4px}
 .plr{display:flex;align-items:center;gap:4px}
@@ -80,6 +107,12 @@ select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--bo
 
 <div class="main">
 <div class="lp">
+  <!-- BOWLER ROSTER -->
+  <div class="sec">
+    <div class="stl">MY BOWLERS</div>
+    <div id="bowler-list" style="min-height:20px"></div>
+    <button class="ab" style="margin-top:4px" onclick="openAddBowler()">+ ADD BOWLER</button>
+  </div>
   <div class="sec">
     <div class="stl">PHASE</div>
     <select id="mphase" onchange="onPhaseChange()"></select>
@@ -109,6 +142,7 @@ select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--bo
   </div>
   <div class="sec">
     <div class="stl">ACTIONS</div>
+    <button class="ab" id="btn-save-field" onclick="saveFieldForBowler()" style="border-color:var(--accent2);color:var(--accent2);background:rgba(242,196,64,.05)">💾 SAVE FIELD FOR BOWLER</button>
     <button class="ab" onclick="addFielder()">+ ADD FIELDER</button>
     <button class="ab" onclick="resetField()">↺ RESET PRESET</button>
     <button class="ab rd" onclick="clearOpt()">✕ CLEAR OPTIONAL</button>
@@ -155,6 +189,29 @@ select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--bo
     <div class="fib" id="fib">Click a fielder for details...</div>
   </div>
 </div>
+</div>
+
+<!-- ══ ADD BOWLER MODAL ══════════════════════════ -->
+<div class="modal-bg" id="bowler-modal" style="display:none" onclick="if(event.target===this)closeAddBowler()">
+  <div class="modal">
+    <h2>➕ ADD BOWLER</h2>
+    <div class="modal-lbl">BOWLER NAME</div>
+    <input id="inp-name" type="text" placeholder="e.g. Jasprit Bumrah" maxlength="28" onkeydown="if(event.key==='Enter')confirmAddBowler()">
+    <div class="modal-lbl">BOWLING TYPE</div>
+    <select id="inp-type">
+      <option value="fast">⚡ Fast / Medium Fast</option>
+      <option value="fast">🏃 Medium</option>
+      <option value="spin">🌀 Off Spin</option>
+      <option value="spin">🌀 Leg Spin</option>
+      <option value="spin">🌀 Left-arm Spin</option>
+    </select>
+    <div class="modal-lbl">BOWLING STYLE (optional)</div>
+    <input id="inp-style" type="text" placeholder="e.g. Right-arm fast, reverse swing" maxlength="40">
+    <div class="modal-row" style="margin-top:6px">
+      <button class="ab" style="flex:1" onclick="confirmAddBowler()">✔ ADD</button>
+      <button class="ab sec2" style="flex:1" onclick="closeAddBowler()">✕ CANCEL</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -858,11 +915,239 @@ canvas.addEventListener('touchstart',e=>{e.preventDefault();const p=getPos(e),i=
 canvas.addEventListener('touchmove',e=>{e.preventDefault();if(G.drag!==null){const p=getPos(e),f=G.fielders[G.drag];f.x=p.x+G.dox;f.y=p.y+G.doy;const dx=f.x-G.CX,dy=f.y-G.CY,d=Math.hypot(dx,dy);if(d>G.R*.97){const sc=G.R*.97/d;f.x=G.CX+dx*sc;f.y=G.CY+dy*sc;}f.name=nearestName(f.x,f.y);draw();showFI(G.drag);updateRec();}},{passive:false});
 canvas.addEventListener('touchend',()=>{G.drag=null;});
 
+/* ═══ BOWLER MANAGEMENT + PERSISTENT STORAGE ════════
+   Two storage keys per session:
+   • 'bowlers'        → JSON array of bowler objects
+   • 'field:{id}'     → ONE saved field setup per bowler
+                         (positions serialized as fractions of canvas)
+   ══════════════════════════════════════════════════ */
+
+let bowlers     = [];
+let activeBowler = null;
+
+/* ─── Serialize positions as canvas fractions so they survive resize ─ */
+function serializeField() {
+  return G.fielders.map(f => ({
+    name: f.name, wk: !!f.wk, bowler: !!f.bowler, slip: !!f.slip,
+    xf: f.x / G.W, yf: f.y / G.H
+  }));
+}
+function deserializeField(arr) {
+  return arr.map(f => ({
+    name: f.name, wk: !!f.wk, bowler: !!f.bowler, slip: !!f.slip,
+    x: f.xf * G.W, y: f.yf * G.H
+  }));
+}
+
+/* ─── Storage helpers ─────────────────────────────── */
+async function loadBowlers() {
+  try {
+    const r = await window.storage.get('bowlers');
+    bowlers = r ? JSON.parse(r.value) : [];
+  } catch { bowlers = []; }
+  renderBowlerList();
+}
+
+async function persistBowlers() {
+  try { await window.storage.set('bowlers', JSON.stringify(bowlers)); } catch {}
+}
+
+/* ─── Save the CURRENT field for the active bowler ── */
+async function saveFieldForBowler() {
+  if (!activeBowler) {
+    showToast('⚠ Select a bowler first, then save their field.');
+    return;
+  }
+  const key  = 'field:' + activeBowler.id;
+  const data = serializeField();
+  try {
+    await window.storage.set(key, JSON.stringify(data));
+    // Mark the bowler as having a saved field
+    activeBowler.hasSaved = true;
+    await persistBowlers();
+    renderBowlerList();
+    showToast(`✅ Field saved for ${activeBowler.name}`);
+    flashSaveBtn();
+  } catch(e) {
+    showToast('❌ Save failed: ' + e.message);
+  }
+}
+
+/* ─── Load the saved field for the active bowler ──── */
+async function loadFieldForBowler(bowler) {
+  const key = 'field:' + bowler.id;
+  try {
+    const r = await window.storage.get(key);
+    if (!r) return false;
+    G.fielders = deserializeField(JSON.parse(r.value));
+    G.sel = null;
+    draw(); updateRec();
+    return true;
+  } catch { return false; }
+}
+
+/* ─── Select / activate a bowler ─────────────────── */
+async function selectBowler(id) {
+  // Deactivate previous
+  activeBowler = bowlers.find(b => b.id === id) || null;
+  renderBowlerList();
+  if (!activeBowler) return;
+
+  // Switch the FAST/SPIN toggle to match this bowler
+  setBowler(activeBowler.type);
+  updateBowlerHint();
+  updateSaveBtn();
+
+  // Load their saved field — if none, fall back to current preset
+  const loaded = await loadFieldForBowler(activeBowler);
+  if (!loaded) {
+    showToast(`No saved field yet for ${activeBowler.name} — set one up and hit Save!`);
+    loadPreset(G.preset);
+  } else {
+    showToast(`📋 Loaded field for ${activeBowler.name}`);
+  }
+}
+
+/* ─── Add bowler modal ────────────────────────────── */
+function openAddBowler() {
+  document.getElementById('inp-name').value  = '';
+  document.getElementById('inp-style').value = '';
+  document.getElementById('inp-type').selectedIndex = 0;
+  document.getElementById('bowler-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('inp-name').focus(), 60);
+}
+function closeAddBowler() {
+  document.getElementById('bowler-modal').style.display = 'none';
+}
+async function confirmAddBowler() {
+  const name = document.getElementById('inp-name').value.trim();
+  if (!name) { document.getElementById('inp-name').focus(); return; }
+  const typeEl  = document.getElementById('inp-type');
+  const type    = typeEl.options[typeEl.selectedIndex].value;   // 'fast' or 'spin'
+  const style   = document.getElementById('inp-style').value.trim();
+  const label   = typeEl.options[typeEl.selectedIndex].text.replace(/^.\s/,''); // human label
+  const id      = 'b_' + Date.now();
+  bowlers.push({ id, name, type, style, label, hasSaved: false });
+  await persistBowlers();
+  closeAddBowler();
+  renderBowlerList();
+  selectBowler(id);
+}
+
+/* ─── Delete bowler + their saved field ──────────── */
+async function deleteBowler(id, e) {
+  e.stopPropagation();
+  const b = bowlers.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(`Delete "${b.name}" and their saved field?`)) return;
+  try { await window.storage.delete('field:' + id); } catch {}
+  bowlers = bowlers.filter(x => x.id !== id);
+  await persistBowlers();
+  if (activeBowler && activeBowler.id === id) {
+    activeBowler = null;
+    updateBowlerHint();
+    updateSaveBtn();
+  }
+  renderBowlerList();
+}
+
+/* ─── Render bowler cards in the left panel ──────── */
+function renderBowlerList() {
+  const el = document.getElementById('bowler-list');
+  if (!el) return;
+  if (bowlers.length === 0) {
+    el.innerHTML = `<div style="font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding:5px 2px;line-height:1.7">
+      No bowlers yet.<br>Click <strong style="color:var(--accent)">+ ADD BOWLER</strong> to start.
+    </div>`;
+    updateSaveBtn(); return;
+  }
+  el.innerHTML = bowlers.map(b => {
+    const isActive = activeBowler && activeBowler.id === b.id;
+    const dot      = b.type === 'fast' ? '#ff6030' : '#42c4e4';
+    const typeLabel = b.label || (b.type === 'fast' ? 'Fast' : 'Spin');
+    return `
+    <div class="bc${isActive ? ' active' : ''}" onclick="selectBowler('${b.id}')">
+      <div class="bc-dot" style="background:${dot}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="bc-name">${b.name}</div>
+        <div style="font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:1px">
+          ${b.style ? b.style + ' · ' : ''}${b.hasSaved
+            ? '<span style="color:var(--accent)">✓ Field saved</span>'
+            : '<span style="color:#587848">No field saved yet</span>'}
+        </div>
+      </div>
+      <span class="bc-type ${b.type}">${b.type === 'fast' ? 'FAST' : 'SPIN'}</span>
+      <button class="bc-del" onclick="deleteBowler('${b.id}',event)" title="Delete bowler">✕</button>
+    </div>`;
+  }).join('');
+  updateSaveBtn();
+}
+
+/* ─── Update save button label ───────────────────── */
+function updateSaveBtn() {
+  const btn = document.getElementById('btn-save-field');
+  if (!btn) return;
+  if (!activeBowler) {
+    btn.textContent  = '💾 SAVE FIELD FOR BOWLER';
+    btn.style.opacity = '0.45';
+    return;
+  }
+  btn.style.opacity = '1';
+  btn.textContent = activeBowler.hasSaved
+    ? `💾 UPDATE FIELD · ${activeBowler.name.slice(0,14)}`
+    : `💾 SAVE FIELD · ${activeBowler.name.slice(0,14)}`;
+}
+
+/* ─── Update canvas hint bar ─────────────────────── */
+function updateBowlerHint() {
+  const hint = document.querySelector('.dh');
+  if (!hint) return;
+  if (activeBowler) {
+    const savedBadge = activeBowler.hasSaved
+      ? ' &nbsp;<span style="color:var(--accent)">✓ Saved</span>'
+      : ' &nbsp;<span style="color:#587848">Unsaved</span>';
+    hint.innerHTML = `🎯 <strong style="color:var(--accent2)">${activeBowler.name}</strong>&nbsp;· ${activeBowler.type === 'fast' ? '⚡ Fast' : '🌀 Spin'}${activeBowler.style ? ' · ' + activeBowler.style : ''}${savedBadge} &nbsp;|&nbsp; Drag · Dbl-click add · Right-click remove`;
+  } else {
+    hint.textContent = 'No bowler selected — add one or click a bowler card · Drag fielders · Dbl-click to add · Right-click to remove';
+  }
+}
+
+/* ─── Flash the save button ──────────────────────── */
+function flashSaveBtn() {
+  const btn = document.getElementById('btn-save-field');
+  if (!btn) return;
+  btn.classList.add('save-flash');
+  setTimeout(() => btn.classList.remove('save-flash'), 700);
+}
+
+/* ─── Toast notification ──────────────────────────── */
+function showToast(msg) {
+  let t = document.getElementById('_toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = [
+      'position:fixed','bottom:22px','left:50%','transform:translateX(-50%)',
+      'background:#0d1c0b','border:1px solid var(--border2)',
+      'color:var(--text)','font-family:IBM Plex Mono,monospace',
+      'font-size:10px','padding:7px 16px','border-radius:20px',
+      'z-index:300','transition:opacity .4s','pointer-events:none',
+      'white-space:nowrap','box-shadow:0 4px 16px rgba(0,0,0,.5)'
+    ].join(';');
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.style.opacity = '0', 2800);
+}
+
 /* ═══ INIT ════════════════════════════════════════ */
 window.addEventListener('resize',resize);
 resize();
 buildPhaseSelect();
 buildPresetMenu();
+loadBowlers();   // load persisted bowlers from storage
 </script>
 </body>
 </html>
