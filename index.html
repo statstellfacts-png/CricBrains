@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FieldIQ — Cricket Strategy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06100a;--text:#d8eebc;--accent:#7ecf38;--accent2:#f2c440;--fast:#ff6030;--spin:#42c4e4;--danger:#ff4040;--panel:#0b160a;--panel2:#081208;--border:#1a3010;--border2:#264218;--muted:#587848}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{background:#040c06;border-bottom:2px solid var(--accent);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--accent)}.logo span{color:var(--accent2)}
+.hc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tog{display:flex;background:#081208;border:1px solid var(--border2);border-radius:20px;overflow:hidden}
+.tog button{padding:5px 12px;border:none;background:transparent;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.tog button.active{background:var(--accent);color:#040c06}
+.tog button.active.fb{background:var(--fast);color:#fff}
+.tog button.active.sb{background:var(--spin);color:#040c06}
+.hlbl{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:1px}
+.main{display:grid;grid-template-columns:186px 1fr 280px;flex:1;overflow:hidden;min-height:0}
+.lp,.rp{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.lp{background:var(--panel);border-right:1px solid var(--border)}
+.rp{background:var(--panel);border-left:1px solid var(--border)}
+.sec{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:8px}
+.stl{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--accent);margin-bottom:5px;border-bottom:1px solid var(--border);padding-bottom:3px}
+.pb{width:100%;padding:5px 7px;margin-bottom:3px;background:#081208;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;text-align:left;transition:all .2s}
+.pb:hover,.pb.on{border-color:var(--accent);color:var(--accent);background:rgba(126,207,56,.07)}
+.sr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sl{color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.sv{color:var(--accent2);font-family:'IBM Plex Mono',monospace;font-weight:600}
+.lr{display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ab{width:100%;padding:6px;border:1px solid var(--accent);background:rgba(126,207,56,.05);color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;border-radius:4px;margin-bottom:3px;transition:all .2s}
+.ab:hover{background:rgba(126,207,56,.14)}.ab.rd{border-color:var(--danger);color:var(--danger)}
+select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:10px;margin-bottom:4px}
+.ff{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#122808 0%,#0a1c06 55%,#050e04 100%);position:relative;overflow:hidden}
+#fc{display:block;cursor:crosshair}
+.dh{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:20px;padding:3px 10px;font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.rh{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.rh.fast{color:var(--fast)}.rh.spin{color:var(--spin)}
+.rl{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1.5px;color:var(--muted);margin-bottom:2px;margin-top:5px}
+.rv{font-size:10px;line-height:1.5;color:var(--text)}.rv strong{color:var(--accent2)}
+.zp{display:inline-block;padding:1px 6px;border-radius:9px;font-size:9px;font-family:'IBM Plex Mono',monospace;font-weight:600;margin:2px;border:1px solid}
+.zp.g{background:rgba(126,207,56,.1);border-color:var(--accent);color:var(--accent)}
+.zp.d{background:rgba(255,64,64,.1);border-color:#ff6060;color:#ff9090}
+.zp.n{background:rgba(242,196,64,.1);border-color:var(--accent2);color:var(--accent2)}
+.tipbox{background:rgba(126,207,56,.04);border:1px solid rgba(126,207,56,.18);border-radius:5px;padding:7px;font-size:10px;line-height:1.5;font-style:italic;color:#88b868}
+.fib{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:7px;font-size:10px;font-family:'IBM Plex Mono',monospace;min-height:44px;color:var(--muted)}
+.fib.on{border-color:var(--accent);color:var(--text)}
+.rule{margin-top:4px;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--accent2);line-height:1.6;padding:4px;background:rgba(242,196,64,.06);border:1px solid rgba(242,196,64,.2);border-radius:4px}
+.pdwrap{display:flex;gap:7px;align-items:flex-start;margin-top:4px}
+.pleg{display:flex;flex-direction:column;gap:3px;font-size:8px;font-family:'IBM Plex Mono',monospace;padding-top:4px}
+.plr{display:flex;align-items:center;gap:4px}
+.plb{width:9px;height:7px;border-radius:2px;flex-shrink:0;border:1px solid}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Field<span>IQ</span></div>
+  <div class="hc">
+    <span class="hlbl">FORMAT:</span>
+    <div class="tog">
+      <button id="btn-t20" class="active" onclick="setFormat('t20')">T20</button>
+      <button id="btn-odi" onclick="setFormat('odi')">ODI</button>
+    </div>
+    <span class="hlbl">BATSMAN:</span>
+    <div class="tog">
+      <button id="btn-rhb" class="active" onclick="setHand('right')">RHB</button>
+      <button id="btn-lhb" onclick="setHand('left')">LHB</button>
+    </div>
+    <span class="hlbl">BOWLER:</span>
+    <div class="tog">
+      <button id="btn-fast" class="active fb" onclick="setBowler('fast')">FAST</button>
+      <button id="btn-spin" onclick="setBowler('spin')">SPIN</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+<div class="lp">
+  <div class="sec">
+    <div class="stl">PHASE</div>
+    <select id="mphase" onchange="onPhaseChange()"></select>
+    <div class="rule" id="fielding-rule"></div>
+  </div>
+  <div class="sec">
+    <div class="stl">FIELD PRESETS</div>
+    <div id="preset-list"></div>
+  </div>
+  <div class="sec">
+    <div class="stl">FIELD STATS</div>
+    <div class="sr"><span class="sl">ON SIDE</span><span class="sv" id="s-on">—</span></div>
+    <div class="sr"><span class="sl">OFF SIDE</span><span class="sv" id="s-off">—</span></div>
+    <div class="sr"><span class="sl">INFIELD</span><span class="sv" id="s-in">—</span></div>
+    <div class="sr"><span class="sl">OUTFIELD</span><span class="sv" id="s-out">—</span></div>
+    <div class="sr"><span class="sl">SLIPS</span><span class="sv" id="s-slip">—</span></div>
+  </div>
+  <div class="sec">
+    <div class="stl">LEGEND</div>
+    <div class="lr"><div class="ld" style="background:#1a1888;border:2px solid #6060dd"></div>Wicket-Keeper</div>
+    <div class="lr"><div class="ld" style="background:#981438"></div>Bowler</div>
+    <div class="lr"><div class="ld" style="background:#a88010"></div>Fielder</div>
+    <div class="lr"><div class="ld" style="background:#cc3808"></div>Selected</div>
+    <div class="lr" style="margin-top:5px;line-height:1.9;font-size:9px">🖱 Drag fielder to move<br>✦ Double-click: add<br>✕ Right-click: remove</div>
+  </div>
+  <div class="sec">
+    <div class="stl">ACTIONS</div>
+    <button class="ab" onclick="addFielder()">+ ADD FIELDER</button>
+    <button class="ab" onclick="resetField()">↺ RESET PRESET</button>
+    <button class="ab rd" onclick="clearOpt()">✕ CLEAR OPTIONAL</button>
+  </div>
+  <div class="sec">
+    <div class="stl">CONDITIONS</div>
+    <select id="mcond" onchange="updateRec()">
+      <option value="new">New Ball</option>
+      <option value="seam">Seaming Track</option>
+      <option value="flat">Flat / Batting Pitch</option>
+      <option value="turning">Turning Track</option>
+      <option value="dew">Dew Factor (2nd inn)</option>
+    </select>
+  </div>
+</div>
+
+<div class="ff">
+  <canvas id="fc"></canvas>
+  <div class="dh">DRAG FIELDERS · DBL-CLICK TO ADD · RIGHT-CLICK TO REMOVE</div>
+</div>
+
+<div class="rp">
+  <div class="sec">
+    <div class="rh fast" id="rhdr">⚡ FAST · T20 — LINE &amp; LENGTH</div>
+    <div class="rl">PITCH MAP — ACTIVE ZONE</div>
+    <div class="pdwrap">
+      <canvas id="pd" width="90" height="240"></canvas>
+      <div class="pleg" id="pleg"></div>
+    </div>
+    <div class="rl">LENGTH</div>
+    <div class="rv" id="rv-len">—</div>
+    <div class="rl">LINE OF ATTACK</div>
+    <div class="rv" id="rv-line">—</div>
+    <div class="rl">VARIATION</div>
+    <div class="rv" id="rv-var">—</div>
+  </div>
+  <div class="sec">
+    <div class="stl">GAP ANALYSIS</div>
+    <div id="rv-gaps" style="line-height:2"></div>
+  </div>
+  <div class="tipbox" id="rv-tip">Loading...</div>
+  <div class="sec">
+    <div class="stl">SELECTED FIELDER</div>
+    <div class="fib" id="fib">Click a fielder for details...</div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ═══ STATE ═══════════════════════════════════════ */
+const G = {
+  hand:'right', bowler:'fast', format:'t20',
+  preset:'t20-pp-attack', phase:'t20-pp',
+  fielders:[], sel:null, drag:null, dox:0, doy:0,
+  W:0, H:0, CX:0, CY:0, R:0
+};
+
+/* ═══ PITCH GEOMETRY ══════════════════════════════ */
+let PH = {};
+function computePitchGeom() {
+  const {CX,CY,R} = G;
+  PH.half = R*0.235; PH.hw = R*0.034;
+  PH.top = CY-PH.half; PH.bot = CY+PH.half;
+  PH.ci = PH.half*0.12;
+  PH.batCreaseY = PH.bot-PH.ci; PH.bowlCreaseY = PH.top+PH.ci;
+  PH.wkDist = (PH.half-PH.ci+R*0.072)/R;
+}
+
+/* ═══ SPOT POSITIONS (RHB frame) ══════════════════
+   Angle 0=UP(bowler end). Clockwise positive.
+   OFF SIDE for RHB = RIGHT of canvas = angles 0–180
+   ON  SIDE for RHB = LEFT  of canvas = angles 180–360
+   WK faces bowler (UP). WK's right = canvas right = off side.
+   ═══════════════════════════════════════════════ */
+const SPOTS_RHB = {
+  "Wicket-Keeper":     {a:180,d:0,wk:true},
+  "Bowler":            {a:0,d:0.22,bowler:true},
+  // OFF SIDE (right, angles ~0–180)
+  "Slip 1":            {a:163,d:0.22,slip:true},
+  "Slip 2":            {a:169,d:0.26,slip:true},
+  "Slip 3":            {a:173,d:0.30,slip:true},
+  "Gully":             {a:135,d:0.27,slip:true},
+  "Leg Slip":          {a:198,d:0.21,slip:true},
+  "Point":             {a:92, d:0.42},
+  "Cover Point":       {a:76, d:0.41},
+  "Cover":             {a:62, d:0.38},
+  "Extra Cover":       {a:47, d:0.35},
+  "Mid Off":           {a:33, d:0.33},
+  "Silly Mid Off":     {a:40, d:0.19},
+  "Third Man":         {a:150,d:0.72},
+  "Deep Point":        {a:93, d:0.75},
+  "Deep Cover":        {a:65, d:0.75},
+  "Long Off":          {a:33, d:0.77},
+  // ON SIDE (left, angles ~180–360)
+  "Short Leg":         {a:207,d:0.18},
+  "Forward Short Leg": {a:220,d:0.20},
+  "Silly Mid On":      {a:320,d:0.19},
+  "Mid On":            {a:328,d:0.33},
+  "Mid Wicket":        {a:301,d:0.38},
+  "Square Leg":        {a:270,d:0.42},
+  "Short Fine Leg":    {a:234,d:0.34},
+  "Long On":           {a:328,d:0.77},
+  "Deep Mid Wicket":   {a:300,d:0.75},
+  "Deep Square Leg":   {a:270,d:0.75},
+  "Fine Leg":          {a:217,d:0.72},
+  "Deep Fine Leg":     {a:208,d:0.77},
+};
+function getSpots() {
+  const res={};
+  for(const [n,def] of Object.entries(SPOTS_RHB)){
+    let a=def.a; if(G.hand==='left') a=(360-a)%360;
+    let d=def.d; if(def.wk) d=PH.wkDist||0.30;
+    res[n]={...def,a,d};
+  }
+  return res;
+}
+
+/* ═══ FORMAT PHASES ═══════════════════════════════ */
+const FORMAT_PHASES = {
+  t20:[
+    {value:'t20-pp',   label:'🔴 Powerplay (Ov 1–6)',   rule:'Max 2 fielders outside 30-yd circle. Bowl full, swing it, no bouncers.'},
+    {value:'t20-mid',  label:'⚙️ Middle Overs (Ov 7–15)',rule:'Max 5 outside circle. Change pace constantly. Dot balls win games.'},
+    {value:'t20-slog', label:'⚡ Slog Overs (Ov 13–15)', rule:'Transition to boundary protection. Mix of pressure + deep riders.'},
+    {value:'t20-death',label:'💀 Death Overs (Ov 16–20)',rule:'Max 5 outside circle. Full boundary cover. Yorker is the ONLY option.'},
+  ],
+  odi:[
+    {value:'odi-pp',   label:'🔴 Powerplay (Ov 1–10)',   rule:'Max 2 outside circle. 2 slips + gully in first 5 overs. Use that swing!'},
+    {value:'odi-mid',  label:'⚙️ Middle Overs (Ov 11–40)',rule:'Max 4 outside circle. Build dot balls. Squeeze the run rate relentlessly.'},
+    {value:'odi-slog', label:'💀 Slog / Death (Ov 41–50)',rule:'Max 5 outside circle. All-out boundary protection. Yorker phase — no mercy.'},
+  ]
+};
+const FORMAT_PRESETS = {
+  t20:{
+    't20-pp':   [{id:'t20-pp-attack',icon:'⚡',label:'Attack'},{id:'t20-pp-swing',icon:'🌊',label:'Swing Setup'},{id:'t20-pp-contain',icon:'🛡',label:'Contain'}],
+    't20-mid':  [{id:'t20-mid-attack',icon:'⚡',label:'Attack'},{id:'t20-mid-contain',icon:'🛡',label:'Contain'},{id:'t20-mid-bouncer',icon:'🚀',label:'Bouncer Plan'}],
+    't20-slog': [{id:'t20-slog-attack',icon:'⚡',label:'Boundary Attack'},{id:'t20-slog-squeeze',icon:'🕷',label:'Spin Squeeze'}],
+    't20-death':[{id:'t20-death-yorker',icon:'💀',label:'Yorker Plan'},{id:'t20-death-lhb',icon:'🔀',label:'vs LHB Death'}],
+  },
+  odi:{
+    'odi-pp':  [{id:'odi-pp-swing',icon:'🌊',label:'Swing (PP)'},{id:'odi-pp-attack',icon:'⚡',label:'Attack (PP)'},{id:'odi-pp-contain',icon:'🛡',label:'Contain (PP)'}],
+    'odi-mid': [{id:'odi-mid-contain',icon:'🛡',label:'Contain'},{id:'odi-mid-attack',icon:'⚡',label:'Attack'},{id:'odi-mid-spin',icon:'🕷',label:'Spin Trap'}],
+    'odi-slog':[{id:'odi-slog-defend',icon:'💀',label:'Death Defend'},{id:'odi-slog-attack',icon:'⚡',label:'Death Attack'}],
+  }
+};
+
+/* ═══ PRESETS — fielder lists ════════════════════ */
+const PRESETS = {
+  // T20 Powerplay — max 2 outside circle
+  't20-pp-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
+  't20-pp-swing':   {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Gully","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Gully","Point","Cover","Mid Off","Mid On","Short Leg","Silly Mid On","Square Leg"]},
+  't20-pp-contain': {fast:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Mid Wicket","Short Leg"]},
+  // T20 Middle — max 5 outside circle
+  't20-mid-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
+  't20-mid-contain': {fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Mid Off","Long On","Long Off","Deep Mid Wicket","Deep Square Leg","Fine Leg"],spin:["Wicket-Keeper","Bowler","Third Man","Deep Cover","Long Off","Long On","Deep Mid Wicket","Deep Square Leg","Mid Off","Cover","Fine Leg"]},
+  't20-mid-bouncer': {fast:["Wicket-Keeper","Bowler","Slip 1","Fine Leg","Deep Square Leg","Point","Cover","Mid Off","Long On","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Short Leg"]},
+  // T20 Slog
+  't20-slog-attack': {fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Point","Mid Off"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Cover","Mid Off"]},
+  't20-slog-squeeze':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Third Man","Point","Cover","Short Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Third Man","Cover","Short Leg","Slip 1"]},
+  // T20 Death — max 5 outside, full boundary
+  't20-death-yorker':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Square Leg"]},
+  't20-death-lhb':   {fast:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Mid Off"]},
+  // ODI Powerplay — max 2 outside circle
+  'odi-pp-swing':   {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Gully","Point","Cover","Mid Off","Mid On","Square Leg","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Gully","Point","Cover","Mid Off","Mid On","Short Leg","Silly Mid On","Square Leg"]},
+  'odi-pp-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
+  'odi-pp-contain': {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Mid Wicket","Short Leg"]},
+  // ODI Middle — max 4 outside circle
+  'odi-mid-contain':{fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Long Off","Long On","Mid Wicket","Deep Square Leg","Fine Leg","Mid Off"],spin:["Wicket-Keeper","Bowler","Third Man","Deep Cover","Long Off","Long On","Deep Mid Wicket","Deep Square Leg","Mid Off","Cover","Fine Leg"]},
+  'odi-mid-attack': {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Slip 1","Leg Slip","Point","Cover","Short Leg","Silly Mid On","Square Leg","Mid Off","Long Off"]},
+  'odi-mid-spin':   {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Short Leg","Square Leg","Fine Leg","Third Man"],spin:["Wicket-Keeper","Bowler","Slip 1","Leg Slip","Point","Cover","Short Leg","Silly Mid On","Square Leg","Mid Off","Long Off"]},
+  // ODI Slog/Death
+  'odi-slog-defend':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Square Leg"]},
+  'odi-slog-attack':{fast:["Wicket-Keeper","Bowler","Slip 1","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Square Leg","Slip 1"]},
+};
+
+/* ═══ RECOMMENDATIONS ════════════════════════════
+   4 lookup objects: fast_right, fast_left, spin_right, spin_left
+   Each key = preset id
+   ═════════════════════════════════════════════ */
+const R_FR = { // Fast / RHB
+  't20-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full length</strong> (6–8m). T20 PP — drive in the air or nick off to the lone slip.",line:"<strong>Outside off stump</strong> — shape it away from RHB, outswing or angle.",vari:"Outswing overs 1–3; off-cutter once shine fades. One surprise short ball.",tip:"T20 PP Attack: Only 2 outside 30-yd circle. Full and outside off stump — force the drive into the slip or the aerial to mid-on. No bouncers in the powerplay."},
+  't20-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / swinging length</strong>. New ball moving — bowl full and exploit the movement.",line:"<strong>Off stump — shape away.</strong> 2 slips + gully means the off cordon is stacked.",vari:"Outswing 2–3 balls then sharp inswinger at the toes — LBW threat.",tip:"T20 PP Swing: Off stump full outswinger → edge to slip. Inswinger → LBW at the crease. Classic T20 new-ball plan with 2 slips."},
+  't20-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Good length</strong> (7–8m). Contain mode — hard to slog from good length.",line:"<strong>Middle to off stump</strong> — cramp the RHB. Reduce boundary options.",vari:"Off-cutter every 3rd ball. Slower ball to ruin timing.",tip:"T20 PP Contain: Good length on off/middle forces back-foot play — much harder to clear the boundary. Dot ball pressure is the goal here."},
+  't20-mid-attack':  {lk:'good',  lnk:'offstump',len:"<strong>Good length</strong> (7–9m). T20 middle — stop the batsman getting under the ball.",line:"<strong>Off stump or just outside</strong> — draw the drive. Boundary riders placed for mis-hits.",vari:"Slower ball every 2nd over: knuckle, off-cutter, back-of-hand. Never same pace twice.",tip:"T20 Middle Attack (7–15): Good length outside off stops big shots. Up to 5 outside circle means boundaries are covered. Change pace every ball — that's what takes wickets."},
+  't20-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — tight</strong>. Dot ball economics — make the batsman manufacture every run.",line:"<strong>Middle and off stump</strong> — no width, no room. Force awkward cross-bat shots.",vari:"Wide off-cutter to test the cut shot. Back-of-hand slower ball every over.",tip:"T20 Middle Contain: 5 boundary riders + mid-off/mid-on saving 1. Bowl middle stump good length — bat comes down straight to mid-on/off. Economy wins T20 middle overs."},
+  't20-mid-bouncer': {lk:'short', lnk:'offstump',len:"<strong>Short pitch</strong> (4–5m). Bouncer plan in middle overs — change the dynamic.",line:"<strong>Body line / off stump height</strong> — cramp the pull shot. Fine leg + deep sq leg set.",vari:"2 bouncers at armpit height then nail the yorker. Mental switch causes the error.",tip:"T20 Middle Bouncer Plan: 2 bouncers then yorker — the batsman is falling back, can't get under the ball. RHB playing the pull gets the top-edge to fine leg."},
+  't20-slog-attack': {lk:'yorker',lnk:'wideoff', len:"<strong>Wide yorker</strong>. Slog overs (13–15) — batsmen launching. Deny the big arc.",line:"<strong>Wide off stump yorker</strong> — forces RHB to hit against natural angle.",vari:"Slower length delivery every over. Surprise bouncer if yorker has been consistent.",tip:"T20 Slog: Wide yorkers prevent the big leg-side slog. Slower ball disrupts timing. Protect long-on, long-off, deep mid-wicket first."},
+  't20-slog-squeeze':{lk:'good',  lnk:'offstump',len:"<strong>Good length / flat</strong>. Use pace to break the slog-over rhythm. Flat and accurate.",line:"<strong>Off stump line</strong> — no width for the big hit. Force on-side play into fielders.",vari:"Slower ball every over — back-of-hand. In-swinger to bowl them as the change-up.",tip:"Slog overs containment: Flat and accurate. Long-on + deep mid-wicket are your best friends. One slower ball per over invites the aerial ball."},
+  't20-death-yorker':{lk:'yorker',lnk:'wideoff', len:"<strong>Yorker — every ball</strong>. T20 death: miss it and it's 6. Zero margin for error.",line:"<strong>Wide off-stump yorker then in-swinging yorker</strong> — alternate every ball.",vari:"1 bouncer above shoulder per over. Slower ball yorker to disrupt timing.",tip:"T20 Death (16–20): 5 on boundary. Wide yorker → in-swinging yorker → repeat. 1 bouncer per over keeps the batsman honest. Practice yorkers every single day."},
+  't20-death-lhb':   {lk:'yorker',lnk:'wideoff', len:"<strong>Yorker aimed at LHB toes</strong>. T20 death — line shifts for LHB. Wide off stump is a different target.",line:"<strong>Wide yorker outside LHB off stump</strong> — prevents the big leg-side swing.",vari:"In-swinging yorker for LBW threat. 1 bouncer outside off — LHBs top-edge it.",tip:"T20 Death vs LHB: LHB loves to ramp or slog across the line. Wide yorkers cut off that angle. Fine leg + deep sq leg behind square crucial. 1 bouncer outside off per over = top-edge to fine leg."},
+  'odi-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / swing length</strong> (5–7m). ODI powerplay — bowl full, swing it, take wickets.",line:"<strong>Off stump — shape away from RHB.</strong> 2 slips + gully set.",vari:"Outswing then inswing. Off-cutter in overs 4–5 when shine fades.",tip:"ODI PP Swing: 2 slips + gully standard with new ball. Bowl full outside off — outside edge to slip. Inswinger pins LBW. Test-match field intensity for first 10 ODI overs."},
+  'odi-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full length</strong> — exploit the 10-over fielding restriction. Wickets win ODIs.",line:"<strong>Outside off stump</strong> — force the drive. Use seam to generate edges.",vari:"Outswing early then knuckle ball. Change angles — wide crease then stumps.",tip:"ODI PP Attack: 2 outside circle = off-side infield packed. Bowl full — edges to slip/gully, aerial shots to mid-on/mid-off. Don't bowl short — the outfield is open."},
+  'odi-pp-contain':  {lk:'good',  lnk:'offstump',len:"<strong>Good length</strong> — control the ODI powerplay (2nd innings or flat pitch).",line:"<strong>Off stump</strong> — keep pressure on, deny easy scoring.",vari:"Inswinger to cramp RHB in crease. Occasional wider ball to test edge.",tip:"ODI PP Contain: Good length on off stump — let the batsman make the mistake. Third man and fine leg even in the powerplay if conditions suit containment."},
+  'odi-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — relentless</strong>. ODI middle overs are the engine room. Dot balls win.",line:"<strong>Middle stump to off stump</strong> — the dot ball corridor. No room to free the arms.",vari:"Slower ball every over. Vary from knuckle ball to back-of-hand. Never same twice.",tip:"ODI Middle Contain (11–40): 4 outside circle. Bowl middle-off stump good length. Make every single feel like hard work. Wider ball once per 2 overs tests the cut."},
+  'odi-mid-attack':  {lk:'good',  lnk:'offstump',len:"<strong>Good length attacking</strong> — go for the wicket in overs 25–35 when RHB has settled.",line:"<strong>Off stump channel</strong> — draw the drive. 1 slip in place for the outside edge.",vari:"Short ball variation — 1–2 bouncers per over to unsettle. Then yorker.",tip:"ODI Middle Attack: When the set batsman is comfortable, attack with good length outside off. Go short once per over, then full next ball. Back-of-hand slower at end of the spell."},
+  'odi-mid-spin':    {lk:'good',  lnk:'offstump',len:"<strong>Good length / tossed up</strong>. ODI middle overs spin — contain and threaten together.",line:"<strong>Off stump — spinning away from RHB.</strong> Slip + gully opportunity every ball.",vari:"Arm ball every 3 deliveries — straight one through the gate. Big turner follows.",tip:"ODI Middle Spin Trap: Short leg + slip = the classic ODI spin setup. Every 3rd ball is the arm ball — the straight one. RHB plays for turn and gets LBW. Dot-ball gold."},
+  'odi-slog-defend': {lk:'yorker',lnk:'wideoff', len:"<strong>Yorker — every ball</strong>. ODI final 10 overs: the game is on the line. No margin.",line:"<strong>Wide off-stump yorker then in-swinging yorker</strong> — the classic death plan.",vari:"1 bouncer above shoulder per over. Slower ball yorker to confuse timing.",tip:"ODI Death (41–50): 5 boundary riders — fine leg, deep sq leg, deep mid-wicket, long-on, long-off. Wide yorker → in-swinging yorker → repeat. Slower ball is a weapon when your yorker has been consistent all spell."},
+  'odi-slog-attack': {lk:'yorker',lnk:'offstump',len:"<strong>Yorker / attacking full</strong>. ODI death attack — slip in, target the tailend.",line:"<strong>Off stump line</strong> — slip in to attack. Yorker generates LBW or bowled.",vari:"Short ball then yorker — if RHB struggles against the bouncer, set them up.",tip:"ODI Death Attack: With genuine tailenders, bring a slip back. Bowl full and straight — LBW and bowled are your methods. Slower ball yorker is unplayable for tailenders under pressure."},
+};
+const R_FL = { // Fast / LHB
+  't20-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full length angling in to LHB</strong>. T20 powerplay — use the angle across the left-hander.",line:"<strong>Off stump angle — ball angles in then leaves LHB.</strong> Over or around the wicket.",vari:"Around wicket for inswing into body. Over wicket for angle away. Mix it up.",tip:"T20 PP vs LHB: Over wicket = angles away → edge to slip. Around wicket = angles in → LBW. Mix angles. Fine leg deep — LHB loves the flick."},
+  't20-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / swing length angling across LHB</strong>. New ball swings — move it away from LHB.",line:"<strong>Around off stump for LHB</strong> — swing ball away toward slips.",vari:"Inswing into the body as the surprise after outswingers.",tip:"T20 PP Swing vs LHB: Full and angle across LHB. Outswinger creates edge. Inswinger pins LHB front of stumps. Slips and gully ready."},
+  't20-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Good length</strong> — contain LHB in powerplay. Reduce boundary options.",line:"<strong>Middle stump or just outside LHB</strong> — cramp the body, limit the drive.",vari:"Slower off-cutter every 3rd ball. Wide ball to test outside edge.",tip:"T20 PP Contain vs LHB: Good length on middle stump cramps LHB — hard to free the arms. No width for the big cut. Fine leg up saving 1 — LHB will try to work fine."},
+  't20-mid-attack':  {lk:'good',  lnk:'offstump',len:"<strong>Good length</strong> — attack LHB in T20 middle overs. Change of pace is the key.",line:"<strong>Off stump or angle across LHB</strong> — draw the drive. On-side boundary riders.",vari:"Bouncer to LHB in the armpit from over the wicket — very hard to play.",tip:"T20 Middle vs LHB: LHB often attacks the on side. Off stump good length — they're forced to drive off side where fielders are. Bouncer from over the wicket into the body is very effective."},
+  't20-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — tight to LHB</strong>. No room on either side. Economy under 7 RPO.",line:"<strong>Middle stump</strong> — every ball in the same spot. Make them manufacture runs.",vari:"Wide ball outside off once per over to test the LHB's cut.",tip:"T20 Middle Contain vs LHB: Bowl middle stump good length — LHB can only work to mid-wicket or mid-on. Boundary riders positioned exactly for those shots."},
+  't20-mid-bouncer': {lk:'short', lnk:'middle',  len:"<strong>Short pitch into the body</strong>. Bouncer plan vs LHB in middle overs.",line:"<strong>Body line — armpit height</strong> from over the wicket. Very uncomfortable.",vari:"Short then full wide — bouncer then wide yorker outside LHB off stump.",tip:"T20 Middle Bouncer Plan vs LHB: Ball angling into body from over wicket is very uncomfortable. Deep sq leg + deep fine leg for top-edge/hook. 2 short balls then full wide yorker = mental error."},
+  't20-slog-attack': {lk:'yorker',lnk:'wideoff', len:"<strong>Wide yorker outside LHB off stump</strong>. LHB wants to hit with the angle — deny it.",line:"<strong>Wide off stump for LHB</strong> — forces them to hit against natural arc.",vari:"In-swinging yorker into LHB toes — LBW. Then back to wide yorker.",tip:"T20 Slog vs LHB: LHB loves to play across the line. Wide yorkers outside off cut off that arc. Deep mid-wicket and long-on must be perfectly positioned."},
+  't20-slog-squeeze':{lk:'good',  lnk:'offstump',len:"<strong>Good length flat across LHB</strong>. Pace to break the LHB's slog-over rhythm.",line:"<strong>Off stump of LHB</strong> — force on-side play into deep riders.",vari:"Slower ball variation to completely mess with LHB timing.",tip:"Slog overs vs LHB: Flat and accurate. Long-on and deep mid-wicket are key. One slower ball per over — LHB timing completely gone."},
+  't20-death-yorker':{lk:'yorker',lnk:'wideoff', len:"<strong>Yorker angled into LHB toes</strong>. T20 death — LHB's natural arc is through mid-wicket; block it.",line:"<strong>Wide yorker outside LHB off stump</strong> — prevents the big leg-side swing.",vari:"In-swinging yorker for LBW. 1 bouncer above shoulder — LHBs top-edge it.",tip:"T20 Death vs LHB: Fine leg + deep sq leg behind square crucial — LHBs ramp, flick, and lap. Wide yorkers cut off the arc. 1 bouncer per over = top-edge to fine leg wicket."},
+  't20-death-lhb':   {lk:'yorker',lnk:'wideoff', len:"<strong>Wide yorker targeting LHB</strong>. T20 death — force the awkward angle.",line:"<strong>Wide outside LHB off stump</strong> — makes them reach for the ball.",vari:"1 bouncer per over — invite the ramp; fine leg positioned behind the keeper.",tip:"T20 Death LHB specialists: Fine leg (back), deep sq leg, deep mid-wicket, long-on, long-off placed for LHB shot zones. Wide yorkers consistently. Bouncer outside off = top-edge to fine leg."},
+  'odi-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / swing length across LHB</strong>. ODI powerplay — move the new ball away from LHB.",line:"<strong>Off stump of LHB</strong> — outswing moves away. Fine leg back for the flick.",vari:"Inswing into the body of LHB as variation. LBW opportunity.",tip:"ODI PP Swing vs LHB: 2 slips + gully, full outside LHB's off stump — outswinger creates edge. Inswinger angles into body for LBW. Genuine wicket-taking setup in ODI powerplay."},
+  'odi-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full length — attack</strong>. ODI powerplay with attacking field against LHB.",line:"<strong>Off stump or angle across LHB.</strong> Slip + gully ready.",vari:"Around the wicket angle — completely changes the line. Very awkward for LHB.",tip:"ODI PP Attack vs LHB: 2 slips means bowl full outside off stump. Alternate over and around wicket to vary the angle dramatically."},
+  'odi-pp-contain':  {lk:'good',  lnk:'offstump',len:"<strong>Good length</strong> — control the ODI powerplay against LHB.",line:"<strong>Off stump of LHB</strong> — no easy on-side scoring. Force them to play off side.",vari:"Straight one through the gate every 3 balls. LHB commits on-side and gets bowled.",tip:"ODI PP Contain vs LHB: Good length on off stump stops LHB from being explosive. Fine leg in circle saves the flick. Mid-on and mid-off inside cover straight boundaries."},
+  'odi-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — consistent</strong>. ODI middle overs vs LHB — dry up runs, force the error.",line:"<strong>Middle stump to off stump of LHB</strong> — the corridor of uncertainty.",vari:"Change of pace every over. Slower ball cramps the pull or sweep shot.",tip:"ODI Middle vs LHB: Middle-to-off stump good length. LHB targets mid-wicket and fine leg — protect these. Around the wicket creates rough outside their off stump over time."},
+  'odi-mid-attack':  {lk:'good',  lnk:'offstump',len:"<strong>Good length attacking</strong> — take the wicket when LHB settles in middle overs.",line:"<strong>Off stump of LHB</strong> — draw the drive. 1 slip for the edge.",vari:"Bouncer from around the wicket — angling into LHB body is very difficult to play.",tip:"ODI Middle Attack vs LHB: When LHB is set, go around the wicket and bowl short. Then over the wicket full outside off. Contrast in angles and lengths is the plan."},
+  'odi-mid-spin':    {lk:'good',  lnk:'offstump',len:"<strong>Good length / tossed up across LHB</strong>. Spin in ODI middle overs creates angle and turn.",line:"<strong>Off stump of LHB — turning away.</strong> Edge or mis-hit to deep cover.",vari:"Arm ball / wrong 'un as surprise — goes straight through with the arm.",tip:"ODI Middle Spin vs LHB: Off-spin over wicket to LHB turns away — slip + gully ready. Around wicket turns into body — LBW threat. Vary the angle every over."},
+  'odi-slog-defend': {lk:'yorker',lnk:'wideoff', len:"<strong>Yorker — every ball</strong>. ODI final 10 overs vs LHB: they will take you on.",line:"<strong>Wide yorker outside LHB off stump.</strong> In-swinging yorker alternated.",vari:"1 bouncer above shoulder outside off — LHBs top-edge to fine leg. Wicket ball.",tip:"ODI Death vs LHB: Fine leg + deep sq leg both sides of behind square crucial. They ramp, flick, lap sweep. Wide yorkers mostly. 1 bouncer outside off per over = wicket ball."},
+  'odi-slog-attack': {lk:'yorker',lnk:'offstump',len:"<strong>Yorker / attacking full</strong>. ODI death attack vs LHB — slip in, go for the kill.",line:"<strong>Off stump line for LHB</strong> — yorker + LBW. Slip in attack position.",vari:"Slower ball yorker — change of pace at the death surprises even the best LHBs.",tip:"ODI Death Attack vs LHB: Lower-order LHBs — bring slip back. Bowl full and straight — LBW and bowled. Slower ball yorker unplayable for tailenders under pressure."},
+};
+const R_SR = { // Spin / RHB
+  't20-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Spin in T20 PP must be wicket-taking — if not, it's very expensive.",line:"<strong>Off stump or outside off</strong> — turn away from RHB. Slip + gully ready.",vari:"Arm ball through the gate every 3rd ball. That straight one is your best T20 PP delivery.",tip:"T20 PP Spin (1–6): Toss it up! RHB in aggressive mode — well-flighted delivery that dips takes the wicket. Arm ball through the gate (bowled) is the match-winning T20 PP ball."},
+  't20-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Tossed up full</strong> — flight it, invite the drive. Get it to dip sharply.",line:"<strong>Off stump — turning away.</strong> Gully and slip must be sharp.",vari:"Carrom ball / doosra — goes the other way, completely surprises the RHB.",tip:"Spin 'swing' in T20 PP: Toss up outside off stump and let it dip and turn. RHB who drives hard creates the edge. Arm ball = the inswinger equivalent. Drift + dip = wickets."},
+  't20-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Flat good length</strong> — don't flight it in contain mode. No chance to slog over the top.",line:"<strong>Middle stump</strong> — force the on-side shot where fielders are positioned.",vari:"Wider ball to test the cut. Never bowl the same delivery twice.",tip:"T20 PP Spin Contain: Flat middle stump — RHB can't slog-sweep without taking a big risk. On-side fielders for the deflection. Never flight it in contain mode."},
+  't20-mid-attack':  {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong> — attack in T20 middle overs with flight and sharp turn.",line:"<strong>Off stump — turning away from RHB.</strong> Slip in for the catch.",vari:"Change trajectory per over — flat, then tossed up, then carrom ball. Three variations.",tip:"T20 Middle Spin Attack (7–15): One slip + short leg + boundary riders. Toss up, turn away — arm ball through the gate bowls them. Flight + variation = T20 wickets."},
+  't20-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length flat</strong> — no air, no room, no width. T20 middle spin contain.",line:"<strong>Middle to off stump</strong> — force the on-side shot into the boundary riders.",vari:"Slightly tossed-up once per over — bait the slog. Big wicket potential.",tip:"T20 Middle Spin Contain: Flat, middle stump, varied pace. One tossed-up per over invites the big shot — long-on and deep mid-wicket are positioned. Economy under 7 RPO is a great result."},
+  't20-mid-bouncer': {lk:'good',  lnk:'offstump',len:"<strong>Good length / top spinner</strong> — the spinner's 'bouncer' in T20 middle overs.",line:"<strong>Off stump</strong> — top spinner skids low and fast. RHB plays back and misses.",vari:"Top spinner then big turner — completely different trajectories back to back.",tip:"T20 Middle Spinner 'Bouncer': Top spinner at good length skids very low and fast — surprise factor like a pace bouncer. Then the big turner. Contrast creates the wicket."},
+  't20-slog-attack': {lk:'good',  lnk:'offstump',len:"<strong>Flat good length</strong>. T20 slog overs with spin: flat and accurate — no room to slog.",line:"<strong>Off stump</strong> — no width for slog-sweep. Force the straight hit into cover.",vari:"One tossed-up full delivery per over — bait the maximum. Catch in the deep.",tip:"T20 Slog Overs Spin: Flat and accurate. Long-on + deep mid-wicket are your best friends. Bowl off stump flat — slog-sweep to deep mid-wicket; straight hit to long-on. One floater per over."},
+  't20-slog-squeeze':{lk:'good',  lnk:'offstump',len:"<strong>Flat good length — spin squeeze</strong>. Spinners CAN take wickets in T20 slog overs.",line:"<strong>Off stump — no width.</strong> Batsman must play straight into well-set fielders.",vari:"Arm ball variation — straight through at good length when they play for turn.",tip:"T20 Slog Spin Squeeze: Short leg + cover pulled in from boundary creates a cage. Flat off stump. Arm ball through the gate is the wicket ball in pressure of slog overs."},
+  't20-death-yorker':{lk:'good',  lnk:'middle',  len:"<strong>Flat good length / skidder</strong>. Spin at T20 death: flat, quicker, let the batsman err.",line:"<strong>Middle stump flat and fast</strong> — no time for the big swing.",vari:"Wide ball outside off to prevent the slog-sweep. Back to middle stump.",tip:"T20 Death Spin: Never flight it — batsman is in max-hitting mode. All 5 boundary riders in position. Wide ball prevents slog-sweep. Skidder at good length is the wicket-taker."},
+  't20-death-lhb':   {lk:'good',  lnk:'middle',  len:"<strong>Flat good length across LHB</strong>. Spin at T20 death vs LHB — flat and quick through the air.",line:"<strong>Middle stump of LHB flat</strong> — no room for the big hit with this angle.",vari:"Around the wicket flat — totally different angle, cramping the LHB's swing.",tip:"T20 Death Spin vs LHB: All 5 boundary riders. Flat middle stump — LHB hits straight to long-on or sweeps to deep mid-wicket. Around wicket arm ball is the wicket ball."},
+  'odi-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Spin in ODI PP must be wicket-taking — flight and turn essential.",line:"<strong>Off stump — turning away from RHB.</strong> Slip + gully ready.",vari:"Arm ball through the gate — straight one. Big turning delivery alternated.",tip:"Spin in ODI PP (1–10): Toss it up! RHB in attack mode but turning ball gets the edge to slip. Arm ball bowls them through the gate. Classic ODI PP spin weapon."},
+  'odi-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full / attacking flight</strong> — ODI PP spin: be brave, toss it up, take wickets.",line:"<strong>Off stump to outside off.</strong> Wide ball invites the slog = top-edge.",vari:"Carrom ball / doosra as change-up — goes the other way completely.",tip:"ODI PP Spin Attack: 2 outside circle = edges go to slip/cover. Toss it up outside off, let it dip. The slog-sweep is very risky with only 2 outside the circle."},
+  'odi-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Good length flat</strong>. ODI PP spin contain — hold back runs in overs 7–10.",line:"<strong>Middle stump</strong> — no width. On-side shot goes to mid-wicket or sq leg in circle.",vari:"Arm ball variation — straight one goes through when they play for turn.",tip:"ODI PP Spin Contain (7–10): When new ball is old, spin contains. Bowl middle stump flat. On-side fielders all in circle. Force the off-side shot — no fielder in the deep (only 2 allowed outside)."},
+  'odi-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — relentless</strong>. ODI middle overs spin: accuracy is the greatest weapon.",line:"<strong>Middle to off stump</strong> — the classic ODI spin line. No width, no full toss.",vari:"Tossed-up ball every 4th delivery — change the length and tempo for the wicket.",tip:"ODI Middle Spin Contain (11–40): Middle stump good length relentlessly. 4 outside circle — position for RHB scoring zones: deep mid-wicket, long-on, long-off, third man. Tossed-up every 4th = wicket ball."},
+  'odi-mid-attack':  {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up — attacking spin</strong>. Go for the wicket in overs 25–35.",line:"<strong>Off stump — turn and bounce.</strong> Slip in for the outside edge.",vari:"Top spinner + big turner alternated — completely different bounce and pace.",tip:"ODI Middle Spin Attack: Slip in, bowl full outside off — drive in air or edge to slip. Top spinner = LBW. Big turner = edge to slip. How Warne and Muralitharan operated."},
+  'odi-mid-spin':    {lk:'full',  lnk:'offstump',len:"<strong>Full / dipping flight</strong>. ODI spin trap: classic setup with short leg, slip, and flight.",line:"<strong>Off stump turning away — or arm ball through the gate.</strong>",vari:"Arm ball then big turner then top spinner — 3 different deliveries in 3 balls.",tip:"ODI Middle Spin Trap: THE classic ODI field. Slip + short leg = two catching options every ball. Turn away → edge to slip; arm ball → gate; top spinner → short leg. 3 dismissal options from 3 deliveries."},
+  'odi-slog-defend': {lk:'good',  lnk:'middle',  len:"<strong>Flat good length</strong>. ODI death spin: don't flight it. Flat, make the big hit work for them.",line:"<strong>Middle stump flat</strong> — all 5 boundary riders in position.",vari:"Wide ball outside off to prevent the big slog-sweep. Back to middle.",tip:"ODI Death Spin (41–50): All 5 boundary riders out. Flat middle stump — slog goes to long-on or long-off. Wide ball prevents slog-sweep. Arm ball skidding flat = the death over weapon."},
+  'odi-slog-attack': {lk:'full',  lnk:'offstump',len:"<strong>Full / attacking flight</strong>. ODI death attack spin — slip back, go for the wicket.",line:"<strong>Off stump — flight it, invite the drive.</strong> Slip for the edge.",vari:"Slower through air then arm ball — keep changing pace and trajectory.",tip:"ODI Death Spin Attack: Lower-order RHB who slog create edges. Bowl full — bowling short as a spinner at the death is very expensive. Arm ball pins them LBW. Classic finisher."},
+};
+const R_SL = { // Spin / LHB
+  't20-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Left-arm spin vs LHB T20 PP: natural turning ball moves away to slip.",line:"<strong>Off stump of LHB</strong> — left-arm spin turns away. Slip + gully ready.",vari:"Googly / wrong 'un — goes the other way. Huge surprise in the T20 powerplay.",tip:"Left-arm Spin vs LHB T20 PP: Ball turns AWAY from LHB — edge to slip/gully. Wrong 'un turns into LHB — LBW or inner edge. Bowl full on off stump. Perfect PP setup."},
+  't20-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Left-arm spin creates drift and dip — very hard for LHB to read.",line:"<strong>Off stump of LHB — drift in then turn away.</strong> The classic left-arm delivery.",vari:"Arm ball of the left-armer — goes straight with the arm into LHB body. LBW gold.",tip:"Left-arm Spin 'swing' vs LHB: Natural drift moves ball into LHB before turning away. Bowl full on off stump — LHB who drives plays outside ball and edges. Gully and slip vital."},
+  't20-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Flat good length</strong> — left-arm spin contain vs LHB in T20 PP.",line:"<strong>Middle stump of LHB</strong> — arm ball angles in, cramps LHB. No room for big on-side shot.",vari:"Wider ball to test the cut — LHBs love to cut left-arm spinners.",tip:"Left-arm Spin Contain vs LHB T20 PP: Flat middle stump — arm ball angles in and cramps LHB. No room for sweep or pull. On-side fielders protect the natural hitting zone."},
+  't20-mid-attack':  {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong> — left-arm spin attack in T20 middle overs vs LHB.",line:"<strong>Off stump of LHB — turn away.</strong> Slip + gully for the edge.",vari:"Around the wicket — arm ball goes into LHB stumps for LBW threat.",tip:"Left-arm Spin T20 Middle Attack vs LHB: Over wicket turns away = slip + gully. Around wicket arm ball = LBW. Alternate angle every over — LHB caught between two threats."},
+  't20-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length flat</strong> — left-arm spin contain vs LHB T20 middle overs.",line:"<strong>Middle stump of LHB</strong> — arm ball angles in. On-side shots very difficult.",vari:"Wider delivery outside off to test the cut once per over.",tip:"Left-arm Spin Contain vs LHB T20 Middle: Middle stump flat — arm ball angles in and cramps LHB. Deep mid-wicket + deep sq leg are the key boundary fielders."},
+  't20-mid-bouncer': {lk:'good',  lnk:'offstump',len:"<strong>Flat top spinner / skidder</strong> — the left-arm spinner's 'bouncer' in T20 middle overs.",line:"<strong>Off stump of LHB — skidding flat.</strong> Very hard to read.",vari:"Top spinner then wrong 'un — completely different pace and turn direction.",tip:"Left-arm Spin 'Bouncer' vs LHB: Top spinner at good length skids quickly toward LHB. Then wrong 'un turns the other way. Contrast in trajectories creates the wicket."},
+  't20-slog-attack': {lk:'good',  lnk:'offstump',len:"<strong>Flat good length</strong>. Left-arm spin T20 slog overs vs LHB — flat and controlled.",line:"<strong>Off stump of LHB</strong> — flat and accurate. Big hit is a controlled risk.",vari:"One tossed-up delivery per over — bait the aerial shot. Deep fielders positioned.",tip:"Left-arm Spin T20 Slog vs LHB: Flat off stump. Long-on + deep mid-wicket cover main LHB hitting zones. One tossed-up per over baits the aerial hit. Around wicket arm ball traps LBW."},
+  't20-slog-squeeze':{lk:'good',  lnk:'offstump',len:"<strong>Flat good length — spin squeeze vs LHB.</strong>",line:"<strong>Off stump of LHB — no width, no room.</strong>",vari:"Around the wicket arm ball — straight into LHB stumps. LBW gold.",tip:"Left-arm Spin Squeeze vs LHB T20 Slog: Short leg + cover from boundary creates a cage. Flat off stump. Around wicket arm ball is unplayable when LHB expects turn. Fine leg back for top-edge."},
+  't20-death-yorker':{lk:'good',  lnk:'middle',  len:"<strong>Flat good length / full</strong>. Left-arm spin at T20 death vs LHB — flat and quick.",line:"<strong>Middle stump of LHB flat</strong> — big hit goes straight to long-on.",vari:"Around the wicket flat — completely different angle cramping the LHB's swing.",tip:"Left-arm Spin T20 Death vs LHB: All 5 boundary riders. Flat middle stump. Around wicket arm ball is the wicket ball. Fine leg back for top-edge off the sweep."},
+  't20-death-lhb':   {lk:'good',  lnk:'middle',  len:"<strong>Flat middle stump</strong>. Left-arm spin specifically targeting LHB specialists at T20 death.",line:"<strong>Middle stump — around the wicket, arm ball straight in.</strong>",vari:"Wide ball outside off of LHB — prevents the big slog-sweep through mid-wicket.",tip:"Left-arm Spin Death vs LHB Specialists: Around wicket flat middle stump. Arm ball traps LBW; turning ball creates edge. Wide ball stops biggest hitting zone. Fine leg + deep sq leg essential."},
+  'odi-pp-swing':    {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Left-arm spin vs LHB ODI PP: the best match-up in limited-overs cricket.",line:"<strong>Off stump of LHB — turn and drift away.</strong> Slips + gully ready.",vari:"Googly as surprise variation — turns back into LHB. LBW and bowled threat.",tip:"ODI PP Left-arm Spin vs LHB: Ball drifts in then turns away — slip + gully cover the edge. Googly turns back toward stumps. LHB against quality left-arm spin in good conditions = big danger."},
+  'odi-pp-attack':   {lk:'full',  lnk:'offstump',len:"<strong>Full / attacking flight</strong>. Left-arm spin ODI PP attack vs LHB — go for the wicket from ball one.",line:"<strong>Off stump of LHB</strong> — flight it up, let it drift and turn.",vari:"Arm ball through the gate — straight one bowls the LHB who plays for turn.",tip:"Left-arm Spin ODI PP Attack vs LHB: 2 slips + gully = maximum catching options. Full on off stump with flight. Arm ball goes straight and bowls them. How to take top-order wickets in ODI powerplays."},
+  'odi-pp-contain':  {lk:'good',  lnk:'middle',  len:"<strong>Good length flat</strong>. Left-arm spin ODI PP contain vs LHB — hold back the runs.",line:"<strong>Middle stump of LHB</strong> — arm ball angles in, cramps the LHB's hitting zone.",vari:"Wider ball outside off once per over — tests the cut.",tip:"Left-arm Spin PP Contain vs LHB: Flat middle stump. On-side fielders in circle. LHB can't sweep without risk; can't drive without facing the edge to slip. Dot balls in the PP are gold."},
+  'odi-mid-contain': {lk:'good',  lnk:'middle',  len:"<strong>Good length — consistent</strong>. Left-arm spin ODI middle overs vs LHB — be relentless.",line:"<strong>Middle to off stump of LHB</strong> — the classic ODI spin line.",vari:"Tossed-up ball every 4th delivery — change tempo, invite the mistake.",tip:"Left-arm Spin ODI Middle Contain vs LHB: Middle-off stump good length. 4 outside circle: deep mid-wicket, long-on, long-off, third man. Tossed-up every 4th = wicket opportunity."},
+  'odi-mid-attack':  {lk:'full',  lnk:'offstump',len:"<strong>Full / tossed up</strong>. Left-arm spin ODI middle attack vs LHB.",line:"<strong>Off stump of LHB with drift.</strong> Slip in to catch the outside edge.",vari:"Around the wicket arm ball — LBW gold when LHB expects turn away.",tip:"Left-arm Spin ODI Middle Attack vs LHB: Over wicket — drift in and turn away for edge. Around wicket — arm ball for LBW. Set LHB caught between two threats. This creates the wicket."},
+  'odi-mid-spin':    {lk:'full',  lnk:'offstump',len:"<strong>Full / dipping flight</strong>. Left-arm spin trap vs LHB in ODI middle overs.",line:"<strong>Off stump of LHB — classical left-arm line.</strong> Slip + short leg combined.",vari:"Googly + arm ball — both go in different directions to LHB. Completely unreadable.",tip:"Left-arm Spin Trap vs LHB: Slip + short leg = two catching options every ball. Over wicket turns away = slip; around wicket with googly = short leg. How the great left-arm spinners operate vs LHBs."},
+  'odi-slog-defend': {lk:'good',  lnk:'middle',  len:"<strong>Flat good length</strong>. Left-arm spin ODI death vs LHB — flat, accurate, boundaries covered.",line:"<strong>Middle stump flat</strong> — all 5 boundary riders for LHB hitting zones.",vari:"Wide ball outside LHB off stump — stops the big hit with the angle.",tip:"Left-arm Spin ODI Death vs LHB: 5 boundary riders. Flat middle stump. Googly is the wicket ball — turns back into LHB when they expect it away. Arm ball traps LBW at the death."},
+  'odi-slog-attack': {lk:'full',  lnk:'offstump',len:"<strong>Full / attacking flight</strong>. Left-arm spin ODI death attack vs LHB.",line:"<strong>Off stump of LHB — flight it up.</strong> Edge from drive goes to slip.",vari:"Googly as the surprise ball — turns into LHB stumps. Bowled or LBW.",tip:"Left-arm Spin ODI Death Attack vs LHB: Lower-order LHBs who swing hard create edges to slip. Googly turns into LHB stumps — bowled. Always have a slip in for the last 3 wickets."},
+};
+
+function getRec(preset) {
+  if (G.bowler==='fast' && G.hand==='right') return R_FR[preset]||R_FR['t20-pp-attack'];
+  if (G.bowler==='fast' && G.hand==='left')  return R_FL[preset]||R_FL['t20-pp-attack'];
+  if (G.bowler==='spin' && G.hand==='right') return R_SR[preset]||R_SR['t20-pp-attack'];
+  return R_SL[preset]||R_SL['t20-pp-attack'];
+}
+
+/* ═══ PITCH DIAGRAM ═══════════════════════════════ */
+const pc   = document.getElementById('pd');
+const pctx = pc.getContext('2d');
+const ZONES = [
+  {key:'bouncer',label:'BOUNCER',    col:'#e82020',y1:.04,y2:.17},
+  {key:'short',  label:'SHORT',      col:'#ff6030',y1:.17,y2:.38},
+  {key:'good',   label:'GOOD LENGTH',col:'#7ecf38',y1:.38,y2:.60},
+  {key:'full',   label:'FULL',       col:'#38c0e0',y1:.60,y2:.77},
+  {key:'yorker', label:'YORKER',     col:'#f2c440',y1:.77,y2:.92},
+];
+function drawPD(lk,lnk){
+  const PW=pc.width,PH=pc.height;
+  pctx.clearRect(0,0,PW,PH);
+  pctx.fillStyle='#081208'; pctx.fillRect(0,0,PW,PH);
+  const px=PW*.26,pw=PW*.48,py=PH*.05,ph=PH*.90;
+  pctx.fillStyle='#c8a240'; pctx.fillRect(px,py,pw,ph);
+  pctx.fillStyle='rgba(100,60,10,.3)';
+  pctx.fillRect(px+pw*.15,py+ph*.78,pw*.7,ph*.08);
+  pctx.fillRect(px+pw*.15,py+ph*.12,pw*.7,ph*.08);
+  ZONES.forEach(z=>{
+    const zy1=py+ph*z.y1,zy2=py+ph*z.y2,isA=z.key===lk;
+    pctx.fillStyle=z.col+(isA?'cc':'22'); pctx.strokeStyle=z.col+(isA?'ff':'55');
+    pctx.lineWidth=isA?2:.5;
+    pctx.fillRect(px,zy1,pw,zy2-zy1); pctx.strokeRect(px,zy1,pw,zy2-zy1);
+    pctx.fillStyle=isA?'#fff':'rgba(100,140,80,.55)';
+    pctx.font=(isA?'bold ':'')+((isA?8:7)+'px IBM Plex Mono');
+    pctx.textAlign='left';
+    pctx.fillText(z.label,px+pw+4,(zy1+zy2)/2+3);
+  });
+  const batCY=py+ph*.88,bowlCY=py+ph*.07;
+  pctx.strokeStyle='rgba(255,255,255,.8)'; pctx.lineWidth=1.5;
+  pctx.beginPath(); pctx.moveTo(px-5,batCY);  pctx.lineTo(px+pw+5,batCY);  pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(px-5,bowlCY); pctx.lineTo(px+pw+5,bowlCY); pctx.stroke();
+  drawPDStumps(px+pw/2,batCY,pw,-1); drawPDStumps(px+pw/2,bowlCY,pw,1);
+  const offSign=G.hand==='right'?1:-1;
+  let lx;
+  if     (lnk==='offstump') lx=px+pw/2+offSign*pw*.24;
+  else if(lnk==='legstump') lx=px+pw/2-offSign*pw*.24;
+  else if(lnk==='wideoff')  lx=px+pw/2+offSign*pw*.40;
+  else                       lx=px+pw/2;
+  pctx.save(); pctx.strokeStyle='rgba(255,220,50,.95)'; pctx.lineWidth=2; pctx.setLineDash([5,4]);
+  pctx.beginPath(); pctx.moveTo(lx,bowlCY); pctx.lineTo(lx,batCY); pctx.stroke();
+  pctx.setLineDash([]); pctx.restore();
+  pctx.fillStyle='rgba(255,220,50,.95)'; pctx.font='bold 7px IBM Plex Mono'; pctx.textAlign='center';
+  pctx.fillText({offstump:'OFF',middle:'MID',legstump:'LEG',wideoff:'WIDE'}[lnk]||'MID',lx,batCY+10);
+  pctx.fillStyle='rgba(255,255,255,.25)'; pctx.font='7px IBM Plex Mono'; pctx.textAlign='center';
+  pctx.fillText('BATSMAN',px+pw/2,py+ph+18); pctx.fillText('BOWLER',px+pw/2,py-4);
+  updatePDLeg(lk);
+}
+function drawPDStumps(cx,cy,pw,dir){
+  const sw=pw*.20,sh=7;
+  pctx.strokeStyle='#f5edd0'; pctx.lineWidth=2;
+  [-sw,0,sw].forEach(dx=>{pctx.beginPath();pctx.moveTo(cx+dx,cy);pctx.lineTo(cx+dx,cy+dir*sh);pctx.stroke();});
+  pctx.lineWidth=1.5;
+  pctx.beginPath();pctx.moveTo(cx-sw,cy+dir*sh);pctx.lineTo(cx+sw,cy+dir*sh);pctx.stroke();
+}
+function updatePDLeg(lk){
+  document.getElementById('pleg').innerHTML=ZONES.map(z=>{
+    const isA=z.key===lk;
+    return`<div class="plr"><div class="plb" style="background:${z.col}${isA?'bb':'20'};border-color:${z.col}${isA?'ff':'44'}"></div><span style="color:${isA?z.col:'#3a5830'};font-weight:${isA?700:400};font-size:${isA?9:7.5}px">${z.label}</span></div>`;
+  }).join('');
+}
+
+/* ═══ CANVAS ══════════════════════════════════════ */
+const canvas=document.getElementById('fc');
+const ctx=canvas.getContext('2d');
+function resize(){
+  const cont=canvas.parentElement;
+  const sz=Math.min(cont.clientWidth-12,cont.clientHeight-24,760);
+  canvas.width=sz; canvas.height=sz;
+  G.W=sz; G.H=sz; G.CX=sz/2; G.CY=sz/2; G.R=sz*.472;
+  computePitchGeom();
+  const spots=getSpots();
+  G.fielders.forEach(f=>{const d=spots[f.name];if(d){f.x=p2x(d.a,d.d);f.y=p2y(d.a,d.d);}});
+  draw();
+}
+function p2x(a,d){return G.CX+d*G.R*Math.cos((a-90)*Math.PI/180)}
+function p2y(a,d){return G.CY+d*G.R*Math.sin((a-90)*Math.PI/180)}
+
+function draw(){
+  const {W,H,CX,CY,R}=G;
+  ctx.clearRect(0,0,W,H);
+  // Alternating grass bands
+  for(let i=8;i>=1;i--){
+    ctx.beginPath(); ctx.arc(CX,CY,R*i/8,0,Math.PI*2);
+    ctx.fillStyle=i%2===0?'#163808':'#1c4a0a'; ctx.fill();
+  }
+  // Boundary
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.strokeStyle='#f8f8e0'; ctx.lineWidth=3; ctx.stroke();
+  ctx.strokeStyle='rgba(200,220,140,.4)'; ctx.lineWidth=1; ctx.stroke();
+  // 30-yard circle
+  const ir=R*.478;
+  ctx.beginPath(); ctx.arc(CX,CY,ir,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=1.5; ctx.setLineDash([8,6]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,255,255,.12)'; ctx.font=`${R*.024}px IBM Plex Mono`; ctx.textAlign='left';
+  ctx.fillText('30 YDS',CX+ir*.72,CY-ir*.05); ctx.textAlign='center';
+  // Pitch
+  const {half,hw,top,bot,ci,batCreaseY,bowlCreaseY}=PH;
+  ctx.fillStyle='#d4aa50'; ctx.fillRect(CX-hw,top,hw*2,half*2);
+  ctx.fillStyle='rgba(140,90,30,.22)';
+  ctx.fillRect(CX-hw*.7,batCreaseY-half*.18,hw*1.4,half*.16);
+  ctx.fillRect(CX-hw*.7,bowlCreaseY+2,hw*1.4,half*.16);
+  ctx.strokeStyle='rgba(160,120,50,.5)'; ctx.lineWidth=1; ctx.strokeRect(CX-hw,top,hw*2,half*2);
+  // Creases
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(CX-hw*2.6,batCreaseY);  ctx.lineTo(CX+hw*2.6,batCreaseY);  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX-hw*2.6,bowlCreaseY); ctx.lineTo(CX+hw*2.6,bowlCreaseY); ctx.stroke();
+  ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,255,.7)';
+  const rc=hw*1.5;
+  [[CX-rc,batCreaseY,CX-rc,bot],[CX+rc,batCreaseY,CX+rc,bot],[CX-rc,bowlCreaseY,CX-rc,top],[CX+rc,bowlCreaseY,CX+rc,top]].forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  });
+  // Stumps
+  drawStumps(CX,batCreaseY,hw,-1); drawStumps(CX,bowlCreaseY,hw,+1);
+  // Labels
+  ctx.fillStyle='rgba(255,255,255,.2)'; ctx.font=`${R*.021}px IBM Plex Mono`; ctx.textAlign='center';
+  ctx.fillText('▲ BOWLER END',CX,top-R*.033);
+  ctx.fillText('▼ BATSMAN END',CX,bot+R*.052);
+  ctx.font=`${R*.026}px IBM Plex Mono`; ctx.fillStyle='rgba(126,207,56,.35)';
+  if(G.hand==='right'){ctx.fillText('OFF SIDE',CX+R*.67,CY);ctx.fillText('ON SIDE',CX-R*.67,CY);}
+  else{ctx.fillText('ON SIDE',CX+R*.67,CY);ctx.fillText('OFF SIDE',CX-R*.67,CY);}
+  // Fielders
+  G.fielders.forEach((f,i)=>drawFielder(f,i));
+  calcStats();
+}
+
+function drawStumps(cx,cy,hw,dir){
+  const sw=hw*.52,sh=G.R*.052,bh=sh+3;
+  ctx.strokeStyle='#f5edd0'; ctx.lineWidth=2.8; ctx.lineCap='round';
+  [-sw,0,sw].forEach(dx=>{ctx.beginPath();ctx.moveTo(cx+dx,cy);ctx.lineTo(cx+dx,cy+dir*sh);ctx.stroke();});
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx-sw,cy+dir*bh);ctx.lineTo(cx-sw*.1,cy+dir*bh);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+sw*.1,cy+dir*bh);ctx.lineTo(cx+sw,cy+dir*bh);ctx.stroke();
+  ctx.lineCap='butt';
+}
+
+function drawFielder(f,idx){
+  const isSel=G.sel===idx,r=G.R*.046;
+  ctx.beginPath(); ctx.arc(f.x+2,f.y+2,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(f.x,f.y,r,0,Math.PI*2);
+  if(f.wk){ctx.fillStyle='#1a1888';ctx.strokeStyle='#6060dd';}
+  else if(f.bowler){ctx.fillStyle='#981438';ctx.strokeStyle='#ee4488';}
+  else if(isSel){ctx.fillStyle='#cc3808';ctx.strokeStyle='#ffffff';}
+  else{ctx.fillStyle='#a88010';ctx.strokeStyle='#e8b820';}
+  ctx.fill(); ctx.lineWidth=isSel?2.5:1.8; ctx.stroke();
+  ctx.fillStyle='#ffffff'; ctx.font=`bold ${G.R*.026}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const clean=f.name.replace(/^(Deep |Forward |Short |Silly )/,'');
+  ctx.fillText(clean.split(' ').slice(0,2).map(w=>w[0]).join(''),f.x,f.y);
+  ctx.textBaseline='alphabetic';
+  ctx.fillStyle=isSel?'#ffffff':'rgba(200,228,160,.75)';
+  ctx.font=`${G.R*.020}px IBM Plex Mono`; ctx.textAlign='center';
+  const lbl=f.name.length>14?f.name.split(' ').pop():f.name;
+  ctx.fillText(lbl,f.x,f.y+r+G.R*.028);
+}
+
+/* ═══ FIELD MANAGEMENT ════════════════════════════ */
+function spotToF(name){
+  const spots=getSpots(),def=spots[name];
+  if(!def) return null;
+  return{x:p2x(def.a,def.d),y:p2y(def.a,def.d),name,wk:!!def.wk,bowler:!!def.bowler,slip:!!def.slip};
+}
+
+function buildPhaseSelect(){
+  const sel=document.getElementById('mphase');
+  const phases=FORMAT_PHASES[G.format];
+  sel.innerHTML=phases.map(p=>`<option value="${p.value}">${p.label}</option>`).join('');
+  G.phase=phases[0].value; sel.value=G.phase;
+  updateFieldingRule();
+}
+function updateFieldingRule(){
+  const phases=FORMAT_PHASES[G.format];
+  const ph=phases.find(p=>p.value===G.phase)||phases[0];
+  document.getElementById('fielding-rule').textContent='📋 '+ph.rule;
+}
+function buildPresetMenu(){
+  const phasePresets=FORMAT_PRESETS[G.format]?.[G.phase]||[];
+  document.getElementById('preset-list').innerHTML=phasePresets.map((p,i)=>
+    `<button class="pb${i===0?' on':''}" id="pr-${p.id}" onclick="loadPreset('${p.id}')">${p.icon} ${p.label}</button>`
+  ).join('');
+  if(phasePresets.length>0) loadPreset(phasePresets[0].id);
+}
+function onPhaseChange(){
+  G.phase=document.getElementById('mphase').value;
+  updateFieldingRule(); buildPresetMenu();
+}
+function loadPreset(name){
+  G.preset=name;
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));
+  const btn=document.getElementById('pr-'+name);
+  if(btn) btn.classList.add('on');
+  const data=PRESETS[name]?.[G.bowler];
+  const list=data||PRESETS['t20-pp-attack'].fast;
+  G.fielders=list.map(n=>spotToF(n)).filter(Boolean);
+  G.sel=null; draw(); updateRec();
+}
+function addFielder(){
+  if(G.fielders.length>=11) return;
+  const used=new Set(G.fielders.map(f=>f.name));
+  const spots=getSpots();
+  const avail=Object.keys(spots).filter(n=>!used.has(n)&&!spots[n].wk&&!spots[n].bowler);
+  if(!avail.length) return;
+  const f=spotToF(avail[Math.floor(Math.random()*avail.length)]);
+  if(f){G.fielders.push(f);draw();updateRec();}
+}
+function resetField(){loadPreset(G.preset);}
+function clearOpt(){G.fielders=G.fielders.filter(f=>f.wk||f.bowler);G.sel=null;draw();updateRec();}
+function setFormat(fmt){
+  G.format=fmt;
+  document.getElementById('btn-t20').classList.toggle('active',fmt==='t20');
+  document.getElementById('btn-odi').classList.toggle('active',fmt==='odi');
+  buildPhaseSelect(); buildPresetMenu();
+}
+function setHand(h){
+  G.hand=h;
+  document.getElementById('btn-rhb').classList.toggle('active',h==='right');
+  document.getElementById('btn-lhb').classList.toggle('active',h==='left');
+  loadPreset(G.preset);
+}
+function setBowler(t){
+  G.bowler=t;
+  document.getElementById('btn-fast').classList.toggle('active',t==='fast');
+  document.getElementById('btn-fast').classList.toggle('fb',t==='fast');
+  document.getElementById('btn-spin').classList.toggle('active',t==='spin');
+  document.getElementById('btn-spin').classList.toggle('sb',t==='spin');
+  loadPreset(G.preset);
+}
+
+/* ═══ FIELD ANALYSIS ══════════════════════════════ */
+function analyzeField(){
+  const {CX,CY,R}=G;
+  const slipCnt=G.fielders.filter(f=>f.slip).length;
+  const mob=G.fielders.filter(f=>!f.wk&&!f.bowler);
+  const inCnt=mob.filter(f=>Math.hypot(f.x-CX,f.y-CY)/R<.50).length;
+  const outCnt=mob.length-inCnt;
+  const hasShortLeg=G.fielders.some(f=>{
+    const d=Math.hypot(f.x-CX,f.y-CY)/R;
+    const a=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
+    const onSide=G.hand==='right'?(a>=180&&a<=360):(a>=0&&a<=180);
+    return d<.27&&onSide;
+  });
+  let lk,lnk;
+  if     (slipCnt>=2&&inCnt>=6) {lk='good';  lnk='offstump';}
+  else if(slipCnt>=1&&inCnt>=5) {lk='good';  lnk='offstump';}
+  else if(outCnt>=7)             {lk='yorker';lnk='wideoff'; }
+  else if(outCnt>=5)             {lk='full';  lnk='middle';  }
+  else if(hasShortLeg&&inCnt>=4){lk='full';  lnk='offstump';}
+  else if(slipCnt===0&&inCnt<=2){lk='short'; lnk='offstump';}
+  else                           {lk='good';  lnk='middle';  }
+  if(G.bowler==='spin'){if(lk==='yorker')lk='full';if(lk==='short')lk='good';}
+  return{lk,lnk,slipCnt,inCnt,outCnt,hasShortLeg};
+}
+
+function updateRec(){
+  const rec=getRec(G.preset);
+  const fa=analyzeField();
+  const hdr=document.getElementById('rhdr');
+  hdr.className='rh '+G.bowler;
+  hdr.textContent=(G.bowler==='fast'?'⚡ FAST':'🌀 SPIN')+' · '+(G.format==='t20'?'T20':'ODI')+' — LINE & LENGTH';
+  document.getElementById('rv-len').innerHTML=rec.len;
+  document.getElementById('rv-line').innerHTML=rec.line;
+  document.getElementById('rv-var').innerHTML=rec.vari;
+  document.getElementById('rv-tip').textContent=rec.tip;
+  drawPD(fa.lk,fa.lnk);
+  doGaps(); draw();
+}
+
+function doGaps(){
+  const {CX,CY,R}=G;
+  const kz=[
+    {n:'Fine Leg',   a:G.hand==='right'?217:143,d:[.45,.85]},
+    {n:'Third Man',  a:G.hand==='right'?150:210,d:[.45,.85]},
+    {n:'Long On',    a:G.hand==='right'?328:32, d:[.58,.85]},
+    {n:'Long Off',   a:G.hand==='right'? 33:327,d:[.58,.85]},
+    {n:'Square Leg', a:G.hand==='right'?270:90, d:[.26,.60]},
+    {n:'Cover',      a:G.hand==='right'? 62:298,d:[.26,.60]},
+    {n:'Mid Wicket', a:G.hand==='right'?300:60, d:[.26,.56]},
+  ];
+  let html='';
+  kz.forEach(z=>{
+    const cov=G.fielders.some(f=>{
+      const dist=Math.hypot(f.x-CX,f.y-CY)/R;
+      const angle=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
+      const diff=Math.abs(((angle-z.a+540)%360)-180);
+      return diff<22&&dist>z.d[0]&&dist<z.d[1];
+    });
+    html+=cov?`<span class="zp g">✓ ${z.n}</span> `:`<span class="zp d">GAP: ${z.n}</span> `;
+  });
+  document.getElementById('rv-gaps').innerHTML=html||'<span class="zp n">All key zones covered</span>';
+}
+
+function calcStats(){
+  const {CX,CY,R}=G;
+  let on=0,off=0,inf=0,outf=0,slip=0;
+  G.fielders.forEach(f=>{
+    if(f.wk||f.bowler) return;
+    const d=Math.hypot(f.x-CX,f.y-CY)/R;
+    const a=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
+    const isOff=G.hand==='right'?(a>=0&&a<180):(a>=180&&a<360);
+    if(isOff)off++;else on++;
+    if(d<.50)inf++;else outf++;
+    if(f.slip)slip++;
+  });
+  document.getElementById('s-on').textContent=on;
+  document.getElementById('s-off').textContent=off;
+  document.getElementById('s-in').textContent=inf;
+  document.getElementById('s-out').textContent=outf;
+  document.getElementById('s-slip').textContent=slip;
+}
+
+/* ═══ MOUSE / TOUCH EVENTS ════════════════════════ */
+function getPos(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const src=e.touches?e.touches[0]:e;
+  return{x:(src.clientX-rect.left)*sx,y:(src.clientY-rect.top)*sy};
+}
+function hitTest(x,y){
+  const hr=G.R*.055;
+  for(let i=G.fielders.length-1;i>=0;i--){
+    if(Math.hypot(G.fielders[i].x-x,G.fielders[i].y-y)<hr) return i;
+  }
+  return -1;
+}
+function nearestName(x,y){
+  const spots=getSpots();
+  let best=null,bd=Infinity;
+  for(const [n,def] of Object.entries(spots)){
+    const d=Math.hypot(p2x(def.a,def.d)-x,p2y(def.a,def.d)-y);
+    if(d<bd){bd=d;best=n;}
+  }
+  return best||'Custom';
+}
+function showFI(i){
+  const f=G.fielders[i],{CX,CY,R}=G;
+  const a=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
+  const isOff=G.hand==='right'?(a>=0&&a<180):(a>=180&&a<360);
+  const d=Math.hypot(f.x-CX,f.y-CY)/R;
+  const box=document.getElementById('fib');
+  box.classList.add('on');
+  box.innerHTML=`<strong style="color:var(--accent)">${f.name}</strong><br>${f.wk?'🧤 Wicket-Keeper':f.bowler?'⚾ Bowler':''}Side: ${isOff?'OFF':'ON'} | Zone: ${d<.50?'Infield':'Outfield'}`;
+}
+
+canvas.addEventListener('mousedown',e=>{
+  const p=getPos(e),i=hitTest(p.x,p.y);
+  if(i>=0){G.sel=i;G.drag=i;G.dox=G.fielders[i].x-p.x;G.doy=G.fielders[i].y-p.y;canvas.style.cursor='grabbing';showFI(i);draw();}
+  else{G.sel=null;document.getElementById('fib').textContent='Click a fielder for details...';document.getElementById('fib').classList.remove('on');draw();}
+});
+canvas.addEventListener('mousemove',e=>{
+  const p=getPos(e);
+  if(G.drag!==null){
+    const f=G.fielders[G.drag];
+    f.x=p.x+G.dox;f.y=p.y+G.doy;
+    const dx=f.x-G.CX,dy=f.y-G.CY,d=Math.hypot(dx,dy);
+    if(d>G.R*.97){const sc=G.R*.97/d;f.x=G.CX+dx*sc;f.y=G.CY+dy*sc;}
+    f.name=nearestName(f.x,f.y);draw();showFI(G.drag);updateRec();
+  } else {canvas.style.cursor=hitTest(p.x,p.y)>=0?'grab':'crosshair';}
+});
+canvas.addEventListener('mouseup',()=>{G.drag=null;canvas.style.cursor='crosshair';});
+canvas.addEventListener('dblclick',e=>{
+  const p=getPos(e);
+  if(hitTest(p.x,p.y)<0&&G.fielders.length<11){
+    G.fielders.push({x:p.x,y:p.y,name:nearestName(p.x,p.y),wk:false,bowler:false,slip:false});
+    draw();updateRec();
+  }
+});
+canvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const p=getPos(e),i=hitTest(p.x,p.y);
+  if(i>=0&&!G.fielders[i].wk&&!G.fielders[i].bowler){G.fielders.splice(i,1);G.sel=null;draw();updateRec();}
+});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const p=getPos(e),i=hitTest(p.x,p.y);if(i>=0){G.sel=i;G.drag=i;G.dox=G.fielders[i].x-p.x;G.doy=G.fielders[i].y-p.y;showFI(i);draw();}},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(G.drag!==null){const p=getPos(e),f=G.fielders[G.drag];f.x=p.x+G.dox;f.y=p.y+G.doy;const dx=f.x-G.CX,dy=f.y-G.CY,d=Math.hypot(dx,dy);if(d>G.R*.97){const sc=G.R*.97/d;f.x=G.CX+dx*sc;f.y=G.CY+dy*sc;}f.name=nearestName(f.x,f.y);draw();showFI(G.drag);updateRec();}},{passive:false});
+canvas.addEventListener('touchend',()=>{G.drag=null;});
+
+/* ═══ INIT ════════════════════════════════════════ */
+window.addEventListener('resize',resize);
+resize();
+buildPhaseSelect();
+buildPresetMenu();
+</script>
+</body>
+</html>
