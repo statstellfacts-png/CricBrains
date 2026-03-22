@@ -91,11 +91,13 @@ select{width:100%;padding:5px;background:var(--panel2);border:1px solid var(--bo
   </div>
   <div class="sec">
     <div class="stl">FIELD STATS</div>
+    <div id="compliance-badge" style="margin-bottom:7px;padding:5px 7px;border-radius:4px;border:1px solid;font-size:9px;font-family:'IBM Plex Mono',monospace;line-height:1.7;">Checking...</div>
     <div class="sr"><span class="sl">ON SIDE</span><span class="sv" id="s-on">—</span></div>
     <div class="sr"><span class="sl">OFF SIDE</span><span class="sv" id="s-off">—</span></div>
-    <div class="sr"><span class="sl">INFIELD</span><span class="sv" id="s-in">—</span></div>
+    <div class="sr"><span class="sl">INFIELD (30yd)</span><span class="sv" id="s-in">—</span></div>
     <div class="sr"><span class="sl">OUTFIELD</span><span class="sv" id="s-out">—</span></div>
     <div class="sr"><span class="sl">SLIPS</span><span class="sv" id="s-slip">—</span></div>
+    <div class="sr"><span class="sl">LEG SIDE</span><span class="sv" id="s-leg">—</span></div>
   </div>
   <div class="sec">
     <div class="stl">LEGEND</div>
@@ -227,15 +229,15 @@ function getSpots() {
 /* ═══ FORMAT PHASES ═══════════════════════════════ */
 const FORMAT_PHASES = {
   t20:[
-    {value:'t20-pp',   label:'🔴 Powerplay (Ov 1–6)',   rule:'Max 2 fielders outside 30-yd circle. Bowl full, swing it, no bouncers.'},
-    {value:'t20-mid',  label:'⚙️ Middle Overs (Ov 7–15)',rule:'Max 5 outside circle. Change pace constantly. Dot balls win games.'},
-    {value:'t20-slog', label:'⚡ Slog Overs (Ov 13–15)', rule:'Transition to boundary protection. Mix of pressure + deep riders.'},
-    {value:'t20-death',label:'💀 Death Overs (Ov 16–20)',rule:'Max 5 outside circle. Full boundary cover. Yorker is the ONLY option.'},
+    {value:'t20-pp',   label:'🔴 Powerplay (Ov 1–6)',   rule:'ICC: Max 2 outside 30-yd circle. Min 7 inside (excl. WK+bowler). Max 5 on leg side.',maxOut:2,minIn:7},
+    {value:'t20-mid',  label:'⚙️ Middle Overs (Ov 7–15)',rule:'ICC: Max 5 outside 30-yd circle. Min 4 inside (excl. WK+bowler). Max 5 on leg side.',maxOut:5,minIn:4},
+    {value:'t20-slog', label:'⚡ Slog Overs (Ov 13–15)', rule:'ICC: Max 5 outside 30-yd circle. Min 4 inside. 5 boundary riders + 4 infield is the standard.',maxOut:5,minIn:4},
+    {value:'t20-death',label:'💀 Death Overs (Ov 16–20)',rule:'ICC: Max 5 outside 30-yd circle. Min 4 inside. 5 boundary + WK + Bowler + 4 infield = 11.',maxOut:5,minIn:4},
   ],
   odi:[
-    {value:'odi-pp',   label:'🔴 Powerplay (Ov 1–10)',   rule:'Max 2 outside circle. 2 slips + gully in first 5 overs. Use that swing!'},
-    {value:'odi-mid',  label:'⚙️ Middle Overs (Ov 11–40)',rule:'Max 4 outside circle. Build dot balls. Squeeze the run rate relentlessly.'},
-    {value:'odi-slog', label:'💀 Slog / Death (Ov 41–50)',rule:'Max 5 outside circle. All-out boundary protection. Yorker phase — no mercy.'},
+    {value:'odi-pp',   label:'🔴 Powerplay (Ov 1–10)',   rule:'ICC: Max 2 outside 30-yd circle. Min 7 inside (excl. WK+bowler). No mandatory catching position since July 2015.',maxOut:2,minIn:7},
+    {value:'odi-mid',  label:'⚙️ Middle Overs (Ov 11–40)',rule:'ICC: Max 4 outside 30-yd circle. Min 5 inside (excl. WK+bowler). Max 5 fielders on leg side.',maxOut:4,minIn:5},
+    {value:'odi-slog', label:'💀 Slog / Death (Ov 41–50)',rule:'ICC: Max 5 outside 30-yd circle. Min 4 inside (excl. WK+bowler). Same restriction as T20 death overs.',maxOut:5,minIn:4},
   ]
 };
 const FORMAT_PRESETS = {
@@ -254,31 +256,61 @@ const FORMAT_PRESETS = {
 
 /* ═══ PRESETS — fielder lists ════════════════════ */
 const PRESETS = {
-  // T20 Powerplay — max 2 outside circle
+  // ── T20 POWERPLAY (Ov 1–6) ── ICC: max 2 outside, min 7 inside (excl. WK+bowler) ──────────
+  // t20-pp-attack fast:  outside=Fine Leg, Third Man = 2 ✅
+  // t20-pp-attack spin:  outside=Fine Leg = 1 ✅
   't20-pp-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
+  // t20-pp-swing fast: outside=Fine Leg = 1 ✅  |  spin: outside=0 ✅
   't20-pp-swing':   {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Gully","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Gully","Point","Cover","Mid Off","Mid On","Short Leg","Silly Mid On","Square Leg"]},
+  // t20-pp-contain fast: outside=Fine Leg,Third Man = 2 ✅  |  spin: same = 2 ✅
   't20-pp-contain': {fast:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Mid Wicket","Short Leg"]},
-  // T20 Middle — max 5 outside circle
+
+  // ── T20 MIDDLE OVERS (Ov 7–15) ── ICC: max 5 outside, min 4 inside ───────────────────────
+  // t20-mid-attack fast: outside=Long On,Deep Sq Leg,Fine Leg,Third Man = 4 ✅
+  // t20-mid-attack spin: outside=Long On,Deep Sq Leg,Fine Leg = 3 ✅
   't20-mid-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
-  't20-mid-contain': {fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Mid Off","Long On","Long Off","Deep Mid Wicket","Deep Square Leg","Fine Leg"],spin:["Wicket-Keeper","Bowler","Third Man","Deep Cover","Long Off","Long On","Deep Mid Wicket","Deep Square Leg","Mid Off","Cover","Fine Leg"]},
+  // t20-mid-contain fast: outside=Third Man,Long On,Long Off,Deep Mid Wkt,Fine Leg = 5 ✅
+  // t20-mid-contain spin: outside=Long Off,Long On,Deep Mid Wkt,Deep Cover,Fine Leg = 5 ✅
+  't20-mid-contain': {fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Mid Off","Mid On","Long On","Long Off","Deep Mid Wicket","Fine Leg"],spin:["Wicket-Keeper","Bowler","Cover","Mid Off","Mid On","Long Off","Long On","Deep Mid Wicket","Deep Cover","Square Leg","Fine Leg"]},
+  // t20-mid-bouncer fast: outside=Fine Leg,Deep Sq Leg,Long On,Third Man = 4 ✅
+  // t20-mid-bouncer spin: outside=Long On,Deep Sq Leg,Fine Leg,Third Man = 4 ✅
   't20-mid-bouncer': {fast:["Wicket-Keeper","Bowler","Slip 1","Fine Leg","Deep Square Leg","Point","Cover","Mid Off","Long On","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Short Leg"]},
-  // T20 Slog
-  't20-slog-attack': {fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Point","Mid Off"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Cover","Mid Off"]},
-  't20-slog-squeeze':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Third Man","Point","Cover","Short Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Third Man","Cover","Short Leg","Slip 1"]},
-  // T20 Death — max 5 outside, full boundary
-  't20-death-yorker':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Square Leg"]},
-  't20-death-lhb':   {fast:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Mid Off"]},
-  // ODI Powerplay — max 2 outside circle
+
+  // ── T20 SLOG (Ov 13–15) ── ICC: max 5 outside, min 4 inside ─────────────────────────────
+  // fast: Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Point,Mid Off,Mid On,Sq Leg = 4 ✅
+  't20-slog-attack': {fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Point","Mid Off","Mid On","Square Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Cover","Mid Off","Mid On","Square Leg"]},
+  // fast: Fine Leg,Deep Sq Leg,Long On,Long Off,Deep Cover = 5 ✅  |  inside: Point,Cover,Mid On,Short Leg = 4 ✅
+  't20-slog-squeeze':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Point","Cover","Mid On","Short Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Long On","Long Off","Deep Cover","Cover","Mid On","Short Leg","Slip 1"]},
+
+  // ── T20 DEATH (Ov 16–20) ── ICC: max 5 outside, min 4 inside ────────────────────────────
+  // fast: Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Short Fine Leg,Mid Off,Mid On,Cover = 4 ✅
+  't20-death-yorker':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Mid On","Cover"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Mid On","Square Leg"]},
+  // fast: Deep Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Short Fine Leg,Mid Off,Mid On,Cover = 4 ✅
+  't20-death-lhb':   {fast:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Mid On","Cover"],spin:["Wicket-Keeper","Bowler","Deep Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Mid Off","Mid On","Square Leg","Cover"]},
+
+  // ── ODI POWERPLAY (Ov 1–10) ── ICC: max 2 outside, min 7 inside ──────────────────────────
+  // fast: outside=0 ✅  |  spin: outside=0 ✅
   'odi-pp-swing':   {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Gully","Point","Cover","Mid Off","Mid On","Square Leg","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Gully","Point","Cover","Mid Off","Mid On","Short Leg","Silly Mid On","Square Leg"]},
+  // fast: Fine Leg=1 ✅  |  spin: Fine Leg=1 ✅
   'odi-pp-attack':  {fast:["Wicket-Keeper","Bowler","Slip 1","Slip 2","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg"],spin:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Short Leg","Mid Wicket"]},
+  // fast: Fine Leg,Third Man=2 ✅  |  spin: Fine Leg,Third Man=2 ✅
   'odi-pp-contain': {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Short Leg"],spin:["Wicket-Keeper","Bowler","Point","Cover","Mid Off","Mid On","Square Leg","Fine Leg","Third Man","Mid Wicket","Short Leg"]},
-  // ODI Middle — max 4 outside circle
-  'odi-mid-contain':{fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Long Off","Long On","Mid Wicket","Deep Square Leg","Fine Leg","Mid Off"],spin:["Wicket-Keeper","Bowler","Third Man","Deep Cover","Long Off","Long On","Deep Mid Wicket","Deep Square Leg","Mid Off","Cover","Fine Leg"]},
+
+  // ── ODI MIDDLE (Ov 11–40) ── ICC: max 4 outside, min 5 inside ───────────────────────────
+  // fast: Third Man,Long Off,Long On,Fine Leg = 4 ✅  |  inside: Point,Cover,Mid Wkt,Mid Off,Sq Leg = 5 ✅
+  // spin: Third Man,Long Off,Long On,Fine Leg = 4 ✅  |  inside: Mid Off,Cover,Mid Wkt,Sq Leg,Mid On = 5 ✅
+  'odi-mid-contain':{fast:["Wicket-Keeper","Bowler","Third Man","Point","Cover","Long Off","Long On","Mid Wicket","Fine Leg","Mid Off","Square Leg"],spin:["Wicket-Keeper","Bowler","Third Man","Mid Off","Cover","Long Off","Long On","Mid Wicket","Fine Leg","Square Leg","Mid On"]},
+  // fast: Long On,Deep Sq Leg,Fine Leg,Third Man = 4 ✅  |  spin: Long Off=1 ✅
   'odi-mid-attack': {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Long On","Deep Square Leg","Fine Leg","Third Man","Mid Wicket"],spin:["Wicket-Keeper","Bowler","Slip 1","Leg Slip","Point","Cover","Short Leg","Silly Mid On","Square Leg","Mid Off","Long Off"]},
+  // fast: Fine Leg,Third Man = 2 ✅  |  spin: Long Off=1 ✅
   'odi-mid-spin':   {fast:["Wicket-Keeper","Bowler","Slip 1","Point","Cover","Mid Off","Mid On","Short Leg","Square Leg","Fine Leg","Third Man"],spin:["Wicket-Keeper","Bowler","Slip 1","Leg Slip","Point","Cover","Short Leg","Silly Mid On","Square Leg","Mid Off","Long Off"]},
-  // ODI Slog/Death
-  'odi-slog-defend':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Deep Point","Third Man","Square Leg"]},
-  'odi-slog-attack':{fast:["Wicket-Keeper","Bowler","Slip 1","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Short Fine Leg"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Deep Cover","Third Man","Square Leg","Slip 1"]},
+
+  // ── ODI SLOG/DEATH (Ov 41–50) ── ICC: max 5 outside, min 4 inside ───────────────────────
+  // fast: Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Short Fine Leg,Mid Off,Mid On,Cover = 4 ✅
+  'odi-slog-defend':{fast:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Mid On","Cover"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Mid On","Square Leg"]},
+  // fast: Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Slip 1,Short Fine Leg,Mid Off,Cover = 4 ✅
+  // spin: Fine Leg,Deep Sq Leg,Deep Mid Wkt,Long On,Long Off = 5 ✅  |  inside: Sq Leg,Slip 1,Mid Off,Mid On = 4 ✅
+  'odi-slog-attack':{fast:["Wicket-Keeper","Bowler","Slip 1","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Short Fine Leg","Mid Off","Cover"],spin:["Wicket-Keeper","Bowler","Fine Leg","Deep Square Leg","Deep Mid Wicket","Long On","Long Off","Square Leg","Slip 1","Mid Off","Mid On"]},
 };
 
 /* ═══ RECOMMENDATIONS ════════════════════════════
@@ -366,6 +398,70 @@ const R_SL = { // Spin / LHB
   'odi-slog-attack': {lk:'full',  lnk:'offstump',len:"<strong>Full / attacking flight</strong>. Left-arm spin ODI death attack vs LHB.",line:"<strong>Off stump of LHB — flight it up.</strong> Edge from drive goes to slip.",vari:"Googly as the surprise ball — turns into LHB stumps. Bowled or LBW.",tip:"Left-arm Spin ODI Death Attack vs LHB: Lower-order LHBs who swing hard create edges to slip. Googly turns into LHB stumps — bowled. Always have a slip in for the last 3 wickets."},
 };
 
+/* ═══ ICC COMPLIANCE CHECKER ═════════════════════
+   Positions whose d >= 0.478 are OUTSIDE the 30-yd circle
+   ═════════════════════════════════════════════ */
+const OUTSIDE_POS = new Set([
+  'Third Man','Deep Point','Deep Cover','Long Off','Long On',
+  'Deep Mid Wicket','Deep Square Leg','Fine Leg','Deep Fine Leg'
+]);
+// On-side (leg-side) positions for RHB (angles 180–360)
+const LEG_SIDE_POS_RHB = new Set([
+  'Leg Slip','Short Leg','Forward Short Leg','Silly Mid On',
+  'Mid On','Mid Wicket','Square Leg','Short Fine Leg',
+  'Long On','Deep Mid Wicket','Deep Square Leg','Fine Leg','Deep Fine Leg','Wicket-Keeper'
+]);
+
+function checkCompliance() {
+  // Get the current phase rules
+  const phases = FORMAT_PHASES[G.format];
+  const ph = phases.find(p => p.value === G.phase) || phases[0];
+  const maxOut = ph.maxOut, minIn = ph.minIn;
+
+  const fielders9 = G.fielders.filter(f => !f.wk && !f.bowler); // 9 fielders excl WK+bowler
+  const outsideCount = fielders9.filter(f => OUTSIDE_POS.has(f.name)).length;
+  const insideCount  = fielders9.filter(f => !OUTSIDE_POS.has(f.name)).length;
+
+  // Leg-side count (WK counts as leg side too)
+  // We use actual angle from canvas for accuracy
+  const {CX, CY} = G;
+  let legSideCount = 0;
+  G.fielders.forEach(f => {
+    const a = (Math.atan2(f.y - CY, f.x - CX) * 180 / Math.PI + 90 + 360) % 360;
+    const isLeg = G.hand === 'right' ? (a >= 180 && a < 360) : (a >= 0 && a < 180);
+    if (isLeg) legSideCount++;
+  });
+
+  const violations = [];
+  if (outsideCount > maxOut) violations.push(`${outsideCount} outside (max ${maxOut} allowed)`);
+  if (insideCount < minIn)   violations.push(`only ${insideCount} inside (min ${minIn} required)`);
+  if (legSideCount > 5)      violations.push(`${legSideCount} on leg side (max 5 allowed)`);
+  if (G.fielders.length !== 11) violations.push(`${G.fielders.length} fielders on field (need 11)`);
+
+  return {
+    ok: violations.length === 0,
+    violations,
+    outsideCount, insideCount, maxOut, minIn, legSideCount,
+    totalFielders: G.fielders.length
+  };
+}
+
+function updateComplianceBadge() {
+  const c = checkCompliance();
+  const badge = document.getElementById('compliance-badge');
+  if (!badge) return;
+  if (c.ok) {
+    badge.innerHTML = `<span style="color:#7ecf38;font-weight:700">✅ ICC VALID</span><br><span style="color:#587848">${c.outsideCount} outside · ${c.insideCount} inside · ${c.legSideCount} leg side</span>`;
+    badge.style.borderColor = 'rgba(126,207,56,.4)';
+    badge.style.background  = 'rgba(126,207,56,.06)';
+  } else {
+    const vtext = c.violations.map(v => '⚠ ' + v).join('<br>');
+    badge.innerHTML = `<span style="color:#ff6060;font-weight:700">❌ ICC VIOLATION</span><br>${vtext}`;
+    badge.style.borderColor = 'rgba(255,64,64,.4)';
+    badge.style.background  = 'rgba(255,64,64,.06)';
+  }
+}
+
 function getRec(preset) {
   if (G.bowler==='fast' && G.hand==='right') return R_FR[preset]||R_FR['t20-pp-attack'];
   if (G.bowler==='fast' && G.hand==='left')  return R_FL[preset]||R_FL['t20-pp-attack'];
@@ -402,11 +498,12 @@ function drawPD(lk,lnk){
     pctx.textAlign='left';
     pctx.fillText(z.label,px+pw+4,(zy1+zy2)/2+3);
   });
-  const batCY=py+ph*.88,bowlCY=py+ph*.07;
+  const batCY=py+ph,bowlCY=py;
   pctx.strokeStyle='rgba(255,255,255,.8)'; pctx.lineWidth=1.5;
-  pctx.beginPath(); pctx.moveTo(px-5,batCY);  pctx.lineTo(px+pw+5,batCY);  pctx.stroke();
-  pctx.beginPath(); pctx.moveTo(px-5,bowlCY); pctx.lineTo(px+pw+5,bowlCY); pctx.stroke();
-  drawPDStumps(px+pw/2,batCY,pw,-1); drawPDStumps(px+pw/2,bowlCY,pw,1);
+  // Popping creases drawn slightly inside the pitch ends
+  pctx.beginPath(); pctx.moveTo(px-5,py+ph*.88);  pctx.lineTo(px+pw+5,py+ph*.88);  pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(px-5,py+ph*.07); pctx.lineTo(px+pw+5,py+ph*.07); pctx.stroke();
+  drawPDStumps(px+pw/2,batCY,pw,-1); drawPDStumps(px+pw/2,bowlCY,pw,+1);
   const offSign=G.hand==='right'?1:-1;
   let lx;
   if     (lnk==='offstump') lx=px+pw/2+offSign*pw*.24;
@@ -414,10 +511,10 @@ function drawPD(lk,lnk){
   else if(lnk==='wideoff')  lx=px+pw/2+offSign*pw*.40;
   else                       lx=px+pw/2;
   pctx.save(); pctx.strokeStyle='rgba(255,220,50,.95)'; pctx.lineWidth=2; pctx.setLineDash([5,4]);
-  pctx.beginPath(); pctx.moveTo(lx,bowlCY); pctx.lineTo(lx,batCY); pctx.stroke();
+  pctx.beginPath(); pctx.moveTo(lx,py+ph*.07); pctx.lineTo(lx,py+ph*.88); pctx.stroke();
   pctx.setLineDash([]); pctx.restore();
   pctx.fillStyle='rgba(255,220,50,.95)'; pctx.font='bold 7px IBM Plex Mono'; pctx.textAlign='center';
-  pctx.fillText({offstump:'OFF',middle:'MID',legstump:'LEG',wideoff:'WIDE'}[lnk]||'MID',lx,batCY+10);
+  pctx.fillText({offstump:'OFF',middle:'MID',legstump:'LEG',wideoff:'WIDE'}[lnk]||'MID',lx,py+ph*.88+10);
   pctx.fillStyle='rgba(255,255,255,.25)'; pctx.font='7px IBM Plex Mono'; pctx.textAlign='center';
   pctx.fillText('BATSMAN',px+pw/2,py+ph+18); pctx.fillText('BOWLER',px+pw/2,py-4);
   updatePDLeg(lk);
@@ -486,8 +583,8 @@ function draw(){
   [[CX-rc,batCreaseY,CX-rc,bot],[CX+rc,batCreaseY,CX+rc,bot],[CX-rc,bowlCreaseY,CX-rc,top],[CX+rc,bowlCreaseY,CX+rc,top]].forEach(([x1,y1,x2,y2])=>{
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
   });
-  // Stumps
-  drawStumps(CX,batCreaseY,hw,-1); drawStumps(CX,bowlCreaseY,hw,+1);
+  // Stumps — placed at the very edges of the pitch rectangle
+  drawStumps(CX,bot,hw,-1); drawStumps(CX,top,hw,+1);
   // Labels
   ctx.fillStyle='rgba(255,255,255,.2)'; ctx.font=`${R*.021}px IBM Plex Mono`; ctx.textAlign='center';
   ctx.fillText('▲ BOWLER END',CX,top-R*.033);
@@ -668,21 +765,32 @@ function doGaps(){
 
 function calcStats(){
   const {CX,CY,R}=G;
-  let on=0,off=0,inf=0,outf=0,slip=0;
+  let on=0,off=0,inf=0,outf=0,slip=0,leg=0;
   G.fielders.forEach(f=>{
     if(f.wk||f.bowler) return;
     const d=Math.hypot(f.x-CX,f.y-CY)/R;
     const a=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
     const isOff=G.hand==='right'?(a>=0&&a<180):(a>=180&&a<360);
+    const isLeg=!isOff;
     if(isOff)off++;else on++;
+    if(isLeg)leg++;
     if(d<.50)inf++;else outf++;
     if(f.slip)slip++;
+  });
+  // Count WK for leg side (WK is on-side behind stumps)
+  G.fielders.filter(f=>f.wk).forEach(f=>{
+    const a=(Math.atan2(f.y-CY,f.x-CX)*180/Math.PI+90+360)%360;
+    const isLeg=G.hand==='right'?(a>=180&&a<360):(a>=0&&a<180);
+    if(isLeg)leg++;
   });
   document.getElementById('s-on').textContent=on;
   document.getElementById('s-off').textContent=off;
   document.getElementById('s-in').textContent=inf;
   document.getElementById('s-out').textContent=outf;
   document.getElementById('s-slip').textContent=slip;
+  const legEl=document.getElementById('s-leg');
+  if(legEl){legEl.textContent=leg;legEl.style.color=leg>5?'#ff6060':'var(--accent2)';}
+  updateComplianceBadge();
 }
 
 /* ═══ MOUSE / TOUCH EVENTS ════════════════════════ */
