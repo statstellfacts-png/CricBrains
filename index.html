@@ -916,16 +916,27 @@ canvas.addEventListener('touchmove',e=>{e.preventDefault();if(G.drag!==null){con
 canvas.addEventListener('touchend',()=>{G.drag=null;});
 
 /* ═══ BOWLER MANAGEMENT + PERSISTENT STORAGE ════════
-   Two storage keys per session:
-   • 'bowlers'        → JSON array of bowler objects
-   • 'field:{id}'     → ONE saved field setup per bowler
-                         (positions serialized as fractions of canvas)
+   Uses localStorage — works in all browsers.
+   Keys:
+   • 'fieldiq_bowlers'    → JSON array of bowler objects
+   • 'fieldiq_field:{id}' → ONE saved field per bowler
    ══════════════════════════════════════════════════ */
 
 let bowlers     = [];
 let activeBowler = null;
 
-/* ─── Serialize positions as canvas fractions so they survive resize ─ */
+/* ─── localStorage wrappers ──────────────────────── */
+function lsGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); return true; } catch { return false; }
+}
+function lsDel(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
+
+/* ─── Serialize positions as canvas fractions ──────── */
 function serializeField() {
   return G.fielders.map(f => ({
     name: f.name, wk: !!f.wk, bowler: !!f.bowler, slip: !!f.slip,
@@ -939,47 +950,47 @@ function deserializeField(arr) {
   }));
 }
 
-/* ─── Storage helpers ─────────────────────────────── */
-async function loadBowlers() {
+/* ─── Load bowlers from localStorage ─────────────── */
+function loadBowlers() {
   try {
-    const r = await window.storage.get('bowlers');
-    bowlers = r ? JSON.parse(r.value) : [];
+    const raw = lsGet('fieldiq_bowlers');
+    bowlers = raw ? JSON.parse(raw) : [];
   } catch { bowlers = []; }
   renderBowlerList();
 }
 
-async function persistBowlers() {
-  try { await window.storage.set('bowlers', JSON.stringify(bowlers)); } catch {}
+function persistBowlers() {
+  lsSet('fieldiq_bowlers', JSON.stringify(bowlers));
 }
 
-/* ─── Save the CURRENT field for the active bowler ── */
-async function saveFieldForBowler() {
+/* ─── Save the current field for the active bowler ── */
+function saveFieldForBowler() {
   if (!activeBowler) {
     showToast('⚠ Select a bowler first, then save their field.');
     return;
   }
-  const key  = 'field:' + activeBowler.id;
+  const key  = 'fieldiq_field:' + activeBowler.id;
   const data = serializeField();
-  try {
-    await window.storage.set(key, JSON.stringify(data));
-    // Mark the bowler as having a saved field
+  const ok   = lsSet(key, JSON.stringify(data));
+  if (ok) {
     activeBowler.hasSaved = true;
-    await persistBowlers();
+    persistBowlers();
     renderBowlerList();
-    showToast(`✅ Field saved for ${activeBowler.name}`);
+    updateBowlerHint();
+    showToast('✅ Field saved for ' + activeBowler.name);
     flashSaveBtn();
-  } catch(e) {
-    showToast('❌ Save failed: ' + e.message);
+  } else {
+    showToast('❌ Save failed — localStorage may be full or blocked.');
   }
 }
 
-/* ─── Load the saved field for the active bowler ──── */
-async function loadFieldForBowler(bowler) {
-  const key = 'field:' + bowler.id;
+/* ─── Load the saved field for a bowler ─────────── */
+function loadFieldForBowler(bowler) {
+  const key = 'fieldiq_field:' + bowler.id;
   try {
-    const r = await window.storage.get(key);
-    if (!r) return false;
-    G.fielders = deserializeField(JSON.parse(r.value));
+    const raw = lsGet(key);
+    if (!raw) return false;
+    G.fielders = deserializeField(JSON.parse(raw));
     G.sel = null;
     draw(); updateRec();
     return true;
@@ -987,24 +998,21 @@ async function loadFieldForBowler(bowler) {
 }
 
 /* ─── Select / activate a bowler ─────────────────── */
-async function selectBowler(id) {
-  // Deactivate previous
+function selectBowler(id) {
   activeBowler = bowlers.find(b => b.id === id) || null;
   renderBowlerList();
   if (!activeBowler) return;
 
-  // Switch the FAST/SPIN toggle to match this bowler
   setBowler(activeBowler.type);
   updateBowlerHint();
   updateSaveBtn();
 
-  // Load their saved field — if none, fall back to current preset
-  const loaded = await loadFieldForBowler(activeBowler);
+  const loaded = loadFieldForBowler(activeBowler);
   if (!loaded) {
-    showToast(`No saved field yet for ${activeBowler.name} — set one up and hit Save!`);
+    showToast('No saved field yet for ' + activeBowler.name + ' — arrange the field and hit Save!');
     loadPreset(G.preset);
   } else {
-    showToast(`📋 Loaded field for ${activeBowler.name}`);
+    showToast('📋 Loaded field for ' + activeBowler.name);
   }
 }
 
@@ -1019,30 +1027,30 @@ function openAddBowler() {
 function closeAddBowler() {
   document.getElementById('bowler-modal').style.display = 'none';
 }
-async function confirmAddBowler() {
+function confirmAddBowler() {
   const name = document.getElementById('inp-name').value.trim();
   if (!name) { document.getElementById('inp-name').focus(); return; }
-  const typeEl  = document.getElementById('inp-type');
-  const type    = typeEl.options[typeEl.selectedIndex].value;   // 'fast' or 'spin'
-  const style   = document.getElementById('inp-style').value.trim();
-  const label   = typeEl.options[typeEl.selectedIndex].text.replace(/^.\s/,''); // human label
-  const id      = 'b_' + Date.now();
+  const typeEl = document.getElementById('inp-type');
+  const type   = typeEl.options[typeEl.selectedIndex].value;
+  const style  = document.getElementById('inp-style').value.trim();
+  const label  = typeEl.options[typeEl.selectedIndex].text.replace(/^.\s/,'');
+  const id     = 'b_' + Date.now();
   bowlers.push({ id, name, type, style, label, hasSaved: false });
-  await persistBowlers();
+  persistBowlers();
   closeAddBowler();
   renderBowlerList();
   selectBowler(id);
 }
 
 /* ─── Delete bowler + their saved field ──────────── */
-async function deleteBowler(id, e) {
+function deleteBowler(id, e) {
   e.stopPropagation();
   const b = bowlers.find(x => x.id === id);
   if (!b) return;
-  if (!confirm(`Delete "${b.name}" and their saved field?`)) return;
-  try { await window.storage.delete('field:' + id); } catch {}
+  if (!confirm('Delete "' + b.name + '" and their saved field?')) return;
+  lsDel('fieldiq_field:' + id);
   bowlers = bowlers.filter(x => x.id !== id);
-  await persistBowlers();
+  persistBowlers();
   if (activeBowler && activeBowler.id === id) {
     activeBowler = null;
     updateBowlerHint();
@@ -1147,7 +1155,7 @@ window.addEventListener('resize',resize);
 resize();
 buildPhaseSelect();
 buildPresetMenu();
-loadBowlers();   // load persisted bowlers from storage
+loadBowlers(); // load bowlers from localStorage
 </script>
 </body>
 </html>
